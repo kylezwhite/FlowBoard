@@ -4,7 +4,7 @@
 
 No servers. No monthly fees. No data stored by us. Your projects live in your own Google Drive account — forever.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/YOUR_USERNAME/flowboard)
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/kylezwhite/flowboard)
 
 > ⚠️ After deploying, you still need to complete the **Google OAuth setup** (Step 3 in the guide below). The app won't work until you do — it takes about 10 minutes.
 
