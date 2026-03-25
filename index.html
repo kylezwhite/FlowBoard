@@ -10,6 +10,7 @@
 <title>FlowBoard</title>
 <link rel="manifest" href="data:application/json,{%22name%22:%22FlowBoard%22,%22short_name%22:%22FlowBoard%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230f172a%22,%22theme_color%22:%22%230f172a%22}">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://apis.google.com/js/api.js" data-cfasync="false"></script>
 <style>
 :root {
   --bg: #0f172a;
@@ -836,7 +837,7 @@ input,textarea,select{font-family:var(--font);outline:none}
 // CONFIG
 // ═══════════════════════════════════════════
 // !! REPLACE THIS WITH YOUR CLIENT ID BEFORE DEPLOYING !!
-const HARDCODED_CLIENT_ID = '960763551446-dj82c7b7q4ac7rs9302fcda7mn11m6lh.apps.googleusercontent.com';
+const HARDCODED_CLIENT_ID = '';
 const SCOPES = 'https://www.googleapis.com/auth/drive.file';
 const FOLDER_NAME = 'FlowBoard_Data';
 const ORG_FOLDER_NAME = 'FlowBoard_Orgs';
@@ -872,29 +873,19 @@ const COLOR_HEX = ['#38bdf8','#34d399','#fbbf24','#f87171','#a78bfa','#f472b6'];
 // ═══════════════════════════════════════════
 window.onload = () => {
   if (!CLIENT_ID) { show('setup-screen'); hide('auth-screen'); }
-  else {
-    // Small delay to ensure page is fully ready
-    setTimeout(loadGAPI, 100);
-  }
+  else initFromGAPI();
 };
 
-function loadGAPI() {
-  const s = document.createElement('script');
-  s.src = 'https://apis.google.com/js/api.js';
-  s.async = true;
-  s.defer = true;
-  s.onload = () => {
-    if (typeof gapi === 'undefined') {
-      showToast('Google API failed to load. Check your connection.', 'error');
-      return;
-    }
-    gapi.load('client:auth2', initGAPI);
-  };
-  s.onerror = () => {
-    showToast('Could not load Google API. Try refreshing.', 'error');
-  };
-  document.head.appendChild(s);
+function initFromGAPI() {
+  if (typeof gapi === 'undefined') {
+    showToast('Google API unavailable. Please refresh.','error');
+    show('auth-screen');
+    return;
+  }
+  gapi.load('client:auth2', initGAPI);
 }
+
+function loadGAPI() { initFromGAPI(); }
 
 function initGAPI() {
   gapi.client.init({
