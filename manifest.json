@@ -1,0 +1,27 @@
+{
+  "name": "FlowBoard",
+  "short_name": "FlowBoard",
+  "description": "Free project management powered by Google Drive",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "https://via.placeholder.com/192x192/0ea5e9/ffffff?text=FB",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://via.placeholder.com/512x512/0ea5e9/ffffff?text=FB",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "business"],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
