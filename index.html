@@ -872,13 +872,27 @@ const COLOR_HEX = ['#38bdf8','#34d399','#fbbf24','#f87171','#a78bfa','#f472b6'];
 // ═══════════════════════════════════════════
 window.onload = () => {
   if (!CLIENT_ID) { show('setup-screen'); hide('auth-screen'); }
-  else loadGAPI();
+  else {
+    // Small delay to ensure page is fully ready
+    setTimeout(loadGAPI, 100);
+  }
 };
 
 function loadGAPI() {
   const s = document.createElement('script');
   s.src = 'https://apis.google.com/js/api.js';
-  s.onload = () => gapi.load('client:auth2', initGAPI);
+  s.async = true;
+  s.defer = true;
+  s.onload = () => {
+    if (typeof gapi === 'undefined') {
+      showToast('Google API failed to load. Check your connection.', 'error');
+      return;
+    }
+    gapi.load('client:auth2', initGAPI);
+  };
+  s.onerror = () => {
+    showToast('Could not load Google API. Try refreshing.', 'error');
+  };
   document.head.appendChild(s);
 }
 
