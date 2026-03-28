@@ -1507,11 +1507,12 @@ function renderProjectView(project, type) {
   const actEl = document.getElementById('proj-actions');
   const canEdit = type==='personal' || currentOrgRole==='admin' || project.createdBy===currentUser.email;
   const canDelete = type==='personal' || currentOrgRole==='admin' || project.createdBy===currentUser.email;
-  actEl.innerHTML = `
-    ${type==='org' && canEdit ? `<button class="btn btn-ghost" onclick="openCollabsModal()">Collaborators</button>` : ''}
-    ${canEdit ? `<button class="btn btn-ghost" onclick="${type==='personal'?'openEditPersonalProject()':'openEditOrgProject()}">Edit</button>` : ''}
-    ${canDelete ? `<button class="btn btn-danger" onclick="${type==='personal'?'deletePersonalProject()':'deleteOrgProject()}">Delete</button>` : ''}
-  `;
+  const collabBtn = (type==='org' && canEdit) ? '<button class="btn btn-ghost" onclick="openCollabsModal()">Collaborators</button>' : '';
+  const editFn = type==='personal' ? 'openEditPersonalProject()' : 'openEditOrgProject()';
+  const delFn = type==='personal' ? 'deletePersonalProject()' : 'deleteOrgProject()';
+  const editBtn = canEdit ? '<button class="btn btn-ghost" onclick="'+editFn+'">Edit</button>' : '';
+  const delBtn = canDelete ? '<button class="btn btn-danger" onclick="'+delFn+'">Delete</button>' : '';
+  actEl.innerHTML = collabBtn + editBtn + delBtn;
 
   // Show/hide task add based on permission
   const addSection = document.getElementById('task-add-section');
