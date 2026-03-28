@@ -468,6 +468,97 @@ input,textarea,select{font-family:var(--font);outline:none}
   .sidebar.open{transform:none}
   .main{margin-left:0}
 }
+
+/* ── TASK DETAIL PANEL ── */
+.task-row{cursor:pointer}
+.task-detail-panel{
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r);margin-top:4px;padding:16px;
+  animation:panel-in 0.15s ease;
+}
+@keyframes panel-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.task-notes-log{
+  max-height:180px;overflow-y:auto;
+  display:flex;flex-direction:column;gap:8px;margin-bottom:10px;
+}
+.note-entry{
+  background:var(--surface);border-radius:var(--r-sm);
+  padding:10px 12px;font-size:13px;line-height:1.6;
+}
+.note-entry-time{font-size:11px;color:var(--text3);margin-bottom:4px}
+.note-entry-text{color:var(--text2);white-space:pre-wrap;word-break:break-word}
+.note-add-row{display:flex;gap:8px;align-items:flex-start}
+.note-textarea{
+  flex:1;padding:9px 12px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  color:var(--text);font-size:13px;resize:none;
+  min-height:60px;transition:border-color 0.2s;
+}
+.note-textarea:focus{border-color:var(--accent)}
+.note-textarea::placeholder{color:var(--text3)}
+
+/* ── DUE DATE ── */
+.due-date-row{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;border-top:1px solid var(--border);margin-top:10px;
+}
+.due-toggle-label{font-size:12px;font-weight:500;color:var(--text2);display:flex;align-items:center;gap:7px;cursor:pointer}
+.due-toggle-label input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent)}
+.due-inputs{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.due-input{
+  padding:5px 10px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--r-sm);color:var(--text);font-size:12px;
+  colorscheme:dark;
+}
+.due-input:focus{border-color:var(--accent)}
+.due-badge{
+  font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px;
+  background:var(--amber-dim);color:var(--amber);
+}
+.due-badge.overdue{background:var(--red-dim);color:var(--red)}
+.due-badge.done{background:var(--done-dim);color:var(--done-c)}
+
+/* ── CALENDAR / ALERTS ROW ── */
+.task-actions-row{
+  display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--border);margin-top:4px;flex-wrap:wrap;
+}
+.btn-xs{
+  padding:5px 11px;font-size:12px;border-radius:20px;
+  display:inline-flex;align-items:center;gap:5px;
+  border:1px solid var(--border);background:transparent;color:var(--text2);
+  transition:all 0.15s;
+}
+.btn-xs:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.btn-xs svg{width:12px;height:12px}
+.btn-xs.synced{border-color:var(--done-c);color:var(--done-c);background:var(--done-dim)}
+.btn-xs.overdue-btn{border-color:var(--red);color:var(--red);background:var(--red-dim)}
+
+/* ── ALERTS SETTINGS MODAL ── */
+.alerts-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.alert-card{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:12px;
+}
+.alert-card label{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:7px;cursor:pointer;margin-bottom:6px}
+.alert-card select{
+  width:100%;padding:6px 8px;background:var(--surface);
+  border:1px solid var(--border);border-radius:var(--r-sm);
+  color:var(--text);font-size:12px;
+}
+
+/* ── SHARE / TRANSFER ── */
+.share-token-box{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--r-sm);padding:10px 12px;
+  font-size:12px;font-family:var(--mono);color:var(--text2);
+  word-break:break-all;margin:10px 0;
+}
+.collab-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--accent-dim);color:var(--accent);
+  padding:4px 10px;border-radius:20px;font-size:12px;margin:3px;
+}
+.collab-pill button{background:none;color:var(--accent);font-size:16px;line-height:1;padding:0 2px;cursor:pointer}
 </style>
 </head>
 <body>
@@ -705,6 +796,15 @@ input,textarea,select{font-family:var(--font);outline:none}
           <button class="filter-btn" onclick="setFilter('todo',this)">To Do</button>
           <button class="filter-btn" onclick="setFilter('progress',this)">In Progress</button>
           <button class="filter-btn" onclick="setFilter('done',this)">Complete</button>
+          <div style="margin-left:auto;display:flex;align-items:center;gap:6px">
+            <span style="font-size:12px;color:var(--text3)">Sort:</span>
+            <select id="task-sort-select" onchange="setSort(this.value)" style="padding:5px 10px;background:var(--surface);border:1px solid var(--border);border-radius:20px;color:var(--text2);font-size:12px;font-family:var(--font)">
+              <option value="created">Date Created</option>
+              <option value="alpha">Alphabetical</option>
+              <option value="due">Due Date</option>
+              <option value="status">Status</option>
+            </select>
+          </div>
         </div>
         <div id="task-list" class="task-list"></div>
       </div>
@@ -833,20 +933,152 @@ input,textarea,select{font-family:var(--font);outline:none}
   </div>
 </div>
 
+<!-- Share Personal Project -->
+<div id="share-project-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Share Project</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Invite someone by email. They'll get a link — when they click it and sign in, this project appears in their FlowBoard.</p>
+    <div class="form-field">
+      <label>Email Address</label>
+      <input type="email" id="share-email-input" placeholder="friend@gmail.com">
+    </div>
+    <div id="share-collabs-list" style="margin-bottom:12px"></div>
+    <div class="modal-info" style="font-size:12px">
+      ⚡ This opens your Gmail with a pre-written invite. Just hit Send.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('share-project-modal')">Close</button>
+      <button class="btn btn-primary" onclick="sendShareInvite()">Generate &amp; Open Gmail</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer to Org -->
+<div id="transfer-org-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Transfer to Organization</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px">Move this project to one of your organizations. It will be removed from your personal workspace.</p>
+    <div class="form-field">
+      <label>Select Organization</label>
+      <select id="transfer-org-select"></select>
+    </div>
+    <div class="form-field">
+      <label>Visibility in Org</label>
+      <select id="transfer-visibility">
+        <option value="public">Visible to all members</option>
+        <option value="hidden">Hidden — collaborators only</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('transfer-org-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeTransfer()">Transfer Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Alerts Settings -->
+<div id="alerts-modal" class="modal-overlay hidden">
+  <div class="modal" style="width:540px">
+    <h3>Alert Settings</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:20px">These defaults apply when syncing tasks to Google Calendar. You can override per task.</p>
+    <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px">Personal Workspace Defaults</div>
+    <div class="alerts-grid">
+      <div class="alert-card">
+        <label><input type="checkbox" id="al-personal-due" checked> Due date reminder</label>
+        <select id="al-personal-due-mins">
+          <option value="0">At time of event</option>
+          <option value="30">30 minutes before</option>
+          <option value="60" selected>1 hour before</option>
+          <option value="1440">1 day before</option>
+          <option value="2880">2 days before</option>
+        </select>
+      </div>
+      <div class="alert-card">
+        <label><input type="checkbox" id="al-personal-daily"> Daily reminder</label>
+        <select id="al-personal-daily-time">
+          <option value="08:00">8:00 AM</option>
+          <option value="09:00" selected>9:00 AM</option>
+          <option value="12:00">12:00 PM</option>
+          <option value="17:00">5:00 PM</option>
+        </select>
+      </div>
+      <div class="alert-card">
+        <label><input type="checkbox" id="al-personal-pastdue" checked> Past due daily alert</label>
+        <select id="al-personal-pastdue-time">
+          <option value="08:00">8:00 AM</option>
+          <option value="09:00" selected>9:00 AM</option>
+          <option value="12:00">12:00 PM</option>
+        </select>
+      </div>
+      <div class="alert-card">
+        <label><input type="checkbox" id="al-personal-email"> Email notifications</label>
+        <select id="al-personal-email-mins">
+          <option value="1440" selected>1 day before</option>
+          <option value="2880">2 days before</option>
+        </select>
+      </div>
+    </div>
+    <div style="font-size:12px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;margin-top:8px">Organization Workspace Defaults</div>
+    <div class="alerts-grid">
+      <div class="alert-card">
+        <label><input type="checkbox" id="al-org-due" checked> Due date reminder</label>
+        <select id="al-org-due-mins">
+          <option value="0">At time of event</option>
+          <option value="30">30 minutes before</option>
+          <option value="60" selected>1 hour before</option>
+          <option value="1440">1 day before</option>
+        </select>
+      </div>
+      <div class="alert-card">
+        <label><input type="checkbox" id="al-org-daily"> Daily reminder</label>
+        <select id="al-org-daily-time">
+          <option value="08:00">8:00 AM</option>
+          <option value="09:00" selected>9:00 AM</option>
+          <option value="12:00">12:00 PM</option>
+        </select>
+      </div>
+      <div class="alert-card">
+        <label><input type="checkbox" id="al-org-pastdue" checked> Past due daily alert</label>
+        <select id="al-org-pastdue-time">
+          <option value="08:00">8:00 AM</option>
+          <option value="09:00" selected>9:00 AM</option>
+        </select>
+      </div>
+      <div class="alert-card">
+        <label><input type="checkbox" id="al-org-email"> Email notifications</label>
+        <select id="al-org-email-mins">
+          <option value="1440" selected>1 day before</option>
+          <option value="2880">2 days before</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('alerts-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveAlertSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ═══════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════
 // !! REPLACE THIS WITH YOUR CLIENT ID BEFORE DEPLOYING !!
 const HARDCODED_CLIENT_ID = '960763551446-dj82c7b7q4ac7rs9302fcda7mn11m6lh.apps.googleusercontent.com';
-const SCOPES = 'https://www.googleapis.com/auth/drive.file';
+const SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/calendar.events https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile';
 const FOLDER_NAME = 'FlowBoard_Data';
 const ORG_FOLDER_NAME = 'FlowBoard_Orgs';
 
 let CLIENT_ID = HARDCODED_CLIENT_ID || localStorage.getItem('fb_client_id') || '';
 let accessToken = null;
 let currentUser = null;
-let workspace = 'personal'; // 'personal' | 'org'
+let workspace = 'personal';
+
+// Alert settings (stored in localStorage)
+let alertSettings = JSON.parse(localStorage.getItem('fb_alert_settings') || 'null') || {
+  personal: { due: true, dueMins: 60, daily: false, dailyTime: '09:00', pastDue: true, pastDueTime: '09:00', email: false, emailMins: 1440 },
+  org:      { due: true, dueMins: 60, daily: false, dailyTime: '09:00', pastDue: true, pastDueTime: '09:00', email: false, emailMins: 1440 }
+};
 
 // Personal data
 let personalFolderId = null;
@@ -863,6 +1095,7 @@ let editingPersonalProject = false;
 let pendingCollabs = {};
 
 let currentFilter = 'all';
+let currentSort = 'created';
 let viewingPersonalProject = false;
 
 // Colors
@@ -875,6 +1108,7 @@ const COLOR_HEX = ['#38bdf8','#34d399','#fbbf24','#f87171','#a78bfa','#f472b6'];
 let tokenClient = null;
 
 window.onload = () => {
+  checkInviteToken();
   if (!CLIENT_ID) { show('setup-screen'); hide('auth-screen'); }
   else initApp();
 };
@@ -919,7 +1153,7 @@ async function fetchUserInfo() {
     document.getElementById('join-email-display').value = currentUser.email;
     hide('auth-screen'); hide('setup-screen');
     show('app-screen');
-    ensurePersonalFolder();
+    ensurePersonalFolder().then(() => processPendingInvite());
     loadOrgs();
   } catch(e) {
     showToast('Could not get user info. Try again.', 'error');
@@ -1512,7 +1746,10 @@ function renderProjectView(project, type) {
   const delFn = type==='personal' ? 'deletePersonalProject()' : 'deleteOrgProject()';
   const editBtn = canEdit ? '<button class="btn btn-ghost" onclick="'+editFn+'">Edit</button>' : '';
   const delBtn = canDelete ? '<button class="btn btn-danger" onclick="'+delFn+'">Delete</button>' : '';
-  actEl.innerHTML = collabBtn + editBtn + delBtn;
+  const shareBtn = type==='personal' ? '<button class="btn btn-ghost" onclick="openShareModal()">Share</button>' : '';
+  const transferBtn = type==='personal' ? '<button class="btn btn-ghost" onclick="openTransferModal()">Transfer to Org</button>' : '';
+  const alertBtn = '<button class="btn btn-ghost" onclick="openAlertSettings(\''+(type==='personal'?'personal':'org')+'\')"><svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg> Alerts</button>';
+  actEl.innerHTML = collabBtn + shareBtn + transferBtn + alertBtn + editBtn + delBtn;
 
   // Show/hide task add based on permission
   const addSection = document.getElementById('task-add-section');
@@ -1522,6 +1759,9 @@ function renderProjectView(project, type) {
   document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector('.filter-btn').classList.add('active');
   currentFilter = 'all';
+  currentSort = 'created';
+  const sortSel = document.getElementById('task-sort-select');
+  if (sortSel) sortSel.value = 'created';
 
   updateStats(project);
   renderTaskList(project, type);
@@ -1547,36 +1787,54 @@ function renderTaskList(project, type) {
   let tasks = [...project.tasks];
   if (currentFilter !== 'all') tasks = tasks.filter(t=>t.status===currentFilter);
   if (!tasks.length) {
-    el.innerHTML = `<div class="empty">
-      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
-      <h3>${currentFilter==='all'?'No tasks yet':'Nothing here'}</h3>
-      <p>${currentFilter==='all'?'Add your first task above.':'No tasks with this status.'}</p>
-    </div>`;
+    el.innerHTML = '<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div><h3>' + (currentFilter==='all'?'No tasks yet':'Nothing here') + '</h3><p>' + (currentFilter==='all'?'Add your first task above.':'No tasks with this status.') + '</p></div>';
     return;
   }
+  // Apply sort
+  const statusOrder = { todo:0, progress:1, done:2 };
+  tasks.sort((a,b) => {
+    if (currentSort==='alpha') return a.title.localeCompare(b.title);
+    if (currentSort==='due') {
+      if (!a.dueDate && !b.dueDate) return 0;
+      if (!a.dueDate) return 1;
+      if (!b.dueDate) return -1;
+      return new Date(a.dueDate) - new Date(b.dueDate);
+    }
+    if (currentSort==='status') return statusOrder[a.status] - statusOrder[b.status];
+    return new Date(a.createdAt) - new Date(b.createdAt); // created (default)
+  });
   const canEdit = type==='personal' || currentOrgRole==='admin' || project.createdBy===currentUser.email;
+  const now = new Date();
   el.innerHTML = tasks.map(t => {
     const sc = t.status==='todo'?'sel-todo':t.status==='progress'?'sel-progress':'sel-done';
     const created = new Date(t.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'});
-    return `<div class="task-row ${t.status==='done'?'is-done':''}">
-      <div class="task-chk" onclick="${canEdit?`toggleTask('${t.id}','${type}')`:''}" style="${!canEdit?'cursor:default':''}">
-        <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
-      </div>
-      <div class="task-body">
-        <div class="task-title-text">${esc(t.title)}</div>
-        <div class="task-date">Added ${created}</div>
-      </div>
-      ${canEdit ? `
-        <select class="status-sel ${sc}" onchange="setTaskStatus('${t.id}','${type}',this.value)">
-          <option value="todo" ${t.status==='todo'?'selected':''}>To Do</option>
-          <option value="progress" ${t.status==='progress'?'selected':''}>In Progress</option>
-          <option value="done" ${t.status==='done'?'selected':''}>Complete</option>
-        </select>
-        <button class="task-del" onclick="deleteTask('${t.id}','${type}')">
-          <svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
-        </button>
-      ` : `<span class="badge ${t.status==='todo'?'badge-todo':t.status==='progress'?'badge-prog':'badge-done'}">${t.status==='todo'?'To Do':t.status==='progress'?'In Progress':'Complete'}</span>`}
-    </div>`;
+    let dueBadge = '';
+    if (t.dueDate) {
+      const due = new Date(t.dueDate);
+      const isOverdue = due < now && t.status !== 'done';
+      const fmtDue = due.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+      dueBadge = '<span class="due-badge ' + (t.status==='done'?'done':isOverdue?'overdue':'') + '">📅 ' + fmtDue + (isOverdue?' · PAST DUE':'') + '</span>';
+    }
+    const noteCount = (t.notes||[]).length;
+    return '<div class="task-row ' + (t.status==='done'?'is-done':'') + '" id="task-'+t.id+'">' +
+      '<div class="task-chk" onclick="' + (canEdit?'toggleTask(\''+t.id+'\',\''+type+'\')':'') + '" style="' + (!canEdit?'cursor:default':'') + '">' +
+        '<svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>' +
+      '</div>' +
+      '<div class="task-body" onclick="toggleTaskDetail(\'' + t.id + '\',\'' + type + '\')" style="cursor:pointer">' +
+        '<div class="task-title-text">' + esc(t.title) + '</div>' +
+        '<div class="task-date">Added ' + created + (dueBadge?' &nbsp;'+dueBadge:'') + (noteCount?' &nbsp;<span style="font-size:11px;color:var(--text3)">📝 '+noteCount+' note'+(noteCount!==1?'s':'')+'</span>':'') + '</div>' +
+      '</div>' +
+      (canEdit ?
+        '<select class="status-sel ' + sc + '" onchange="setTaskStatus(\''+t.id+'\',\''+type+'\',this.value)" onclick="event.stopPropagation()">' +
+          '<option value="todo"' + (t.status==='todo'?' selected':'') + '>To Do</option>' +
+          '<option value="progress"' + (t.status==='progress'?' selected':'') + '>In Progress</option>' +
+          '<option value="done"' + (t.status==='done'?' selected':'') + '>Complete</option>' +
+        '</select>' +
+        '<button class="task-del" onclick="event.stopPropagation();deleteTask(\''+t.id+'\',\''+type+'\')">' +
+          '<svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>' +
+        '</button>'
+      : '<span class="badge ' + (t.status==='todo'?'badge-todo':t.status==='progress'?'badge-prog':'badge-done') + '">' + (t.status==='todo'?'To Do':t.status==='progress'?'In Progress':'Complete') + '</span>') +
+    '</div>';
   }).join('');
 }
 
@@ -1646,6 +1904,13 @@ function setFilter(f, btn) {
   if (project) renderTaskList(project, type);
 }
 
+function setSort(val) {
+  currentSort = val;
+  const type = viewingPersonalProject ? 'personal' : 'org';
+  const project = type==='personal' ? currentPersonalProject : currentOrgProject;
+  if (project) renderTaskList(project, type);
+}
+
 // ═══════════════════════════════════════════
 // RENDER HELPERS
 // ═══════════════════════════════════════════
@@ -1704,7 +1969,430 @@ function setActiveNav(id) {
 }
 
 // ═══════════════════════════════════════════
-// UTILS
+// TASK DETAIL PANEL (notes, due date, calendar)
+// ═══════════════════════════════════════════
+let _openDetailId = null;
+let _detailType = null;
+
+function toggleTaskDetail(taskId, type) {
+  const existing = document.getElementById('detail-'+taskId);
+  if (existing) { existing.remove(); _openDetailId = null; return; }
+  if (_openDetailId) { const old = document.getElementById('detail-'+_openDetailId); if(old) old.remove(); }
+  _openDetailId = taskId; _detailType = type;
+  const project = type==='personal' ? currentPersonalProject : currentOrgProject;
+  const task = project.tasks.find(t=>t.id===taskId);
+  if (!task) return;
+  const canEdit = type==='personal' || currentOrgRole==='admin' || project.createdBy===currentUser.email;
+  const taskRow = document.getElementById('task-'+taskId);
+  if (!taskRow) return;
+
+  const hasDue = !!task.dueDate;
+  const dueDate = task.dueDate ? task.dueDate.split('T')[0] : '';
+  const dueTime = task.dueDate && task.dueDate.includes('T') ? task.dueDate.split('T')[1].substring(0,5) : '09:00';
+  const isSynced = !!task.calEventId;
+  const notes = task.notes || [];
+  const ws = type==='personal' ? 'personal' : 'org';
+
+  const panel = document.createElement('div');
+  panel.className = 'task-detail-panel';
+  panel.id = 'detail-'+taskId;
+
+  panel.innerHTML =
+    // Notes log
+    '<div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Notes &amp; Updates</div>' +
+    '<div class="task-notes-log" id="notes-log-'+taskId+'">' +
+      (notes.length ? notes.map(n =>
+        '<div class="note-entry"><div class="note-entry-time">' + new Date(n.ts).toLocaleString() + '</div><div class="note-entry-text">' + esc(n.text) + '</div></div>'
+      ).join('') : '<div style="font-size:13px;color:var(--text3);padding:8px 0">No notes yet. Add one below.</div>') +
+    '</div>' +
+    (canEdit ?
+      '<div class="note-add-row">' +
+        '<textarea class="note-textarea" id="note-input-'+taskId+'" placeholder="Add an update or note..."></textarea>' +
+        '<button class="btn btn-primary" style="padding:8px 14px;font-size:13px" onclick="addNote(\''+taskId+'\',\''+type+'\')">Add</button>' +
+      '</div>' : '') +
+    // Due date row
+    '<div class="due-date-row">' +
+      '<label class="due-toggle-label">' +
+        '<input type="checkbox" id="due-toggle-'+taskId+'" ' + (hasDue?'checked':'') + ' onchange="toggleDueDate(\''+taskId+'\',\''+type+'\')">' +
+        'Due Date' +
+      '</label>' +
+      '<div class="due-inputs" id="due-inputs-'+taskId+'" style="' + (!hasDue?'display:none':'') + '">' +
+        '<input type="date" class="due-input" id="due-date-'+taskId+'" value="'+dueDate+'" onchange="saveDueDate(\''+taskId+'\',\''+type+'\')">' +
+        '<input type="time" class="due-input" id="due-time-'+taskId+'" value="'+dueTime+'" onchange="saveDueDate(\''+taskId+'\',\''+type+'\')">' +
+      '</div>' +
+    '</div>' +
+    // Action buttons row
+    (canEdit ?
+      '<div class="task-actions-row">' +
+        '<button class="btn-xs ' + (isSynced?'synced':'') + '" onclick="syncTaskToCalendar(\''+taskId+'\',\''+type+'\')">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>' +
+          (isSynced ? 'Synced to Calendar' : 'Sync to Calendar') +
+        '</button>' +
+        (isSynced ?
+          '<button class="btn-xs overdue-btn" onclick="removeCalendarSync(\''+taskId+'\',\''+type+'\')">' +
+            '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>' +
+            'Remove Calendar' +
+          '</button>' : '') +
+        '<button class="btn-xs" onclick="openAlertSettings(\''+ws+'\')">' +
+          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>' +
+          'Alert Settings' +
+        '</button>' +
+      '</div>' : '');
+
+  taskRow.insertAdjacentElement('afterend', panel);
+}
+
+async function addNote(taskId, type) {
+  const input = document.getElementById('note-input-'+taskId);
+  const text = input.value.trim();
+  if (!text) return;
+  const project = type==='personal' ? currentPersonalProject : currentOrgProject;
+  const task = project.tasks.find(t=>t.id===taskId);
+  if (!task) return;
+  if (!task.notes) task.notes = [];
+  task.notes.push({ ts: new Date().toISOString(), text });
+  input.value = '';
+  await driveWrite(project, project.fileId);
+  syncProjectToList(project, type);
+  // Refresh notes log
+  const log = document.getElementById('notes-log-'+taskId);
+  if (log) {
+    log.innerHTML = task.notes.map(n =>
+      '<div class="note-entry"><div class="note-entry-time">' + new Date(n.ts).toLocaleString() + '</div><div class="note-entry-text">' + esc(n.text) + '</div></div>'
+    ).join('');
+    log.scrollTop = log.scrollHeight;
+  }
+  showToast('Note added');
+}
+
+function toggleDueDate(taskId, type) {
+  const chk = document.getElementById('due-toggle-'+taskId);
+  const inputs = document.getElementById('due-inputs-'+taskId);
+  if (chk.checked) { inputs.style.display = 'flex'; }
+  else { inputs.style.display = 'none'; saveDueDate(taskId, type, true); }
+}
+
+async function saveDueDate(taskId, type, clear=false) {
+  const project = type==='personal' ? currentPersonalProject : currentOrgProject;
+  const task = project.tasks.find(t=>t.id===taskId);
+  if (!task) return;
+  if (clear) { task.dueDate = null; }
+  else {
+    const d = document.getElementById('due-date-'+taskId)?.value;
+    const ti = document.getElementById('due-time-'+taskId)?.value || '09:00';
+    if (d) task.dueDate = d + 'T' + ti;
+  }
+  await driveWrite(project, project.fileId);
+  syncProjectToList(project, type);
+  renderTaskList(project, type);
+  showToast(clear ? 'Due date removed' : 'Due date saved');
+}
+
+// ═══════════════════════════════════════════
+// GOOGLE CALENDAR SYNC
+// ═══════════════════════════════════════════
+async function ensureCalendarToken() {
+  if (!accessToken) { showToast('Please sign in first','error'); return false; }
+  return true;
+}
+
+async function syncTaskToCalendar(taskId, type) {
+  if (!await ensureCalendarToken()) return;
+  const project = type==='personal' ? currentPersonalProject : currentOrgProject;
+  const task = project.tasks.find(t=>t.id===taskId);
+  if (!task) return;
+  if (!task.dueDate) { showToast('Set a due date first','error'); return; }
+
+  const ws = type==='personal' ? 'personal' : 'org';
+  const al = alertSettings[ws];
+  const due = new Date(task.dueDate);
+  const dateStr = due.toISOString().split('T')[0];
+  const hasTime = task.dueDate.includes('T');
+
+  // Build reminders
+  const overrides = [];
+  if (al.due) overrides.push({ method:'popup', minutes: al.dueMins });
+  if (al.email) overrides.push({ method:'email', minutes: al.emailMins });
+
+  const event = {
+    summary: task.title + ' — FlowBoard',
+    description: 'Project: ' + project.name + '\nStatus: ' + task.status + (task.notes&&task.notes.length ? '\n\nLatest note: ' + task.notes[task.notes.length-1].text : ''),
+    start: hasTime ? { dateTime: due.toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+                   : { date: dateStr },
+    end: hasTime ? { dateTime: new Date(due.getTime()+3600000).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }
+                 : { date: dateStr },
+    recurrence: ['RRULE:FREQ=DAILY;UNTIL=' + due.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z'],
+    reminders: { useDefault: false, overrides }
+  };
+
+  try {
+    showToast('Syncing to Google Calendar...');
+    const method = task.calEventId ? 'PUT' : 'POST';
+    const url = task.calEventId
+      ? 'https://www.googleapis.com/calendar/v3/calendars/primary/events/' + task.calEventId
+      : 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+    const res = await fetch(url, {
+      method,
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify(event)
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      if (err.error?.status === 'UNAUTHENTICATED' || err.error?.code === 401) {
+        showToast('Need Calendar permission — please sign out and sign in again','error'); return;
+      }
+      throw new Error(err.error?.message || 'Calendar API error');
+    }
+    const created = await res.json();
+    task.calEventId = created.id;
+
+    // Past due event (separate daily event starting day after due date)
+    if (al.pastDue && task.status !== 'done') {
+      const nextDay = new Date(due); nextDay.setDate(nextDay.getDate()+1);
+      const pastDueEvent = {
+        summary: '⚠ PAST DUE: ' + task.title,
+        description: 'This task is past due in FlowBoard.\nProject: ' + project.name,
+        start: { date: nextDay.toISOString().split('T')[0] },
+        end: { date: nextDay.toISOString().split('T')[0] },
+        recurrence: ['RRULE:FREQ=DAILY;COUNT=30'],
+        reminders: { useDefault: false, overrides: [{ method:'popup', minutes: parseInt(al.pastDueTime.replace(':',''))-800 }] }
+      };
+      const pdRes = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', {
+        method:'POST',
+        headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'},
+        body: JSON.stringify(pastDueEvent)
+      });
+      if (pdRes.ok) { const pd = await pdRes.json(); task.calPastDueEventId = pd.id; }
+    }
+
+    await driveWrite(project, project.fileId);
+    syncProjectToList(project, type);
+    // Refresh panel
+    const panel = document.getElementById('detail-'+taskId);
+    if (panel) { panel.remove(); _openDetailId = null; }
+    renderTaskList(project, type);
+    showToast('Synced to Google Calendar ✓','success');
+  } catch(e) {
+    showToast('Calendar sync failed: ' + e.message,'error');
+    console.error(e);
+  }
+}
+
+async function removeCalendarSync(taskId, type) {
+  if (!await ensureCalendarToken()) return;
+  const project = type==='personal' ? currentPersonalProject : currentOrgProject;
+  const task = project.tasks.find(t=>t.id===taskId);
+  if (!task || !task.calEventId) return;
+  try {
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+task.calEventId, {
+      method:'DELETE', headers:{'Authorization':'Bearer '+accessToken}
+    });
+    if (task.calPastDueEventId) {
+      await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+task.calPastDueEventId, {
+        method:'DELETE', headers:{'Authorization':'Bearer '+accessToken}
+      });
+      delete task.calPastDueEventId;
+    }
+    delete task.calEventId;
+    await driveWrite(project, project.fileId);
+    syncProjectToList(project, type);
+    const panel = document.getElementById('detail-'+taskId);
+    if (panel) { panel.remove(); _openDetailId = null; }
+    renderTaskList(project, type);
+    showToast('Removed from Calendar');
+  } catch(e) { showToast('Failed to remove: ' + e.message,'error'); }
+}
+
+// ═══════════════════════════════════════════
+// ALERT SETTINGS
+// ═══════════════════════════════════════════
+function openAlertSettings(ws) {
+  const al = alertSettings[ws] || alertSettings.personal;
+  document.getElementById('al-'+ws+'-due').checked = al.due;
+  document.getElementById('al-'+ws+'-due-mins').value = al.dueMins;
+  document.getElementById('al-'+ws+'-daily').checked = al.daily;
+  document.getElementById('al-'+ws+'-daily-time').value = al.dailyTime;
+  document.getElementById('al-'+ws+'-pastdue').checked = al.pastDue;
+  document.getElementById('al-'+ws+'-pastdue-time').value = al.pastDueTime;
+  document.getElementById('al-'+ws+'-email').checked = al.email;
+  document.getElementById('al-'+ws+'-email-mins').value = al.emailMins;
+  show('alerts-modal');
+}
+
+function saveAlertSettings() {
+  ['personal','org'].forEach(ws => {
+    alertSettings[ws] = {
+      due: document.getElementById('al-'+ws+'-due').checked,
+      dueMins: parseInt(document.getElementById('al-'+ws+'-due-mins').value),
+      daily: document.getElementById('al-'+ws+'-daily').checked,
+      dailyTime: document.getElementById('al-'+ws+'-daily-time').value,
+      pastDue: document.getElementById('al-'+ws+'-pastdue').checked,
+      pastDueTime: document.getElementById('al-'+ws+'-pastdue-time').value,
+      email: document.getElementById('al-'+ws+'-email').checked,
+      emailMins: parseInt(document.getElementById('al-'+ws+'-email-mins').value)
+    };
+  });
+  localStorage.setItem('fb_alert_settings', JSON.stringify(alertSettings));
+  closeModal('alerts-modal');
+  showToast('Alert settings saved','success');
+}
+
+// ═══════════════════════════════════════════
+// PERSONAL PROJECT SHARING
+// ═══════════════════════════════════════════
+function openShareModal() {
+  if (!currentPersonalProject) return;
+  const collabs = currentPersonalProject.sharedWith || [];
+  const list = document.getElementById('share-collabs-list');
+  list.innerHTML = collabs.length
+    ? '<div style="margin-bottom:8px;font-size:12px;color:var(--text2)">Currently shared with:</div>' +
+      collabs.map(c =>
+        '<span class="collab-pill">' + esc(c.email) +
+        '<button onclick="revokeShare(\''+esc(c.email)+'\')" title="Revoke">×</button></span>'
+      ).join('')
+    : '';
+  document.getElementById('share-email-input').value = '';
+  show('share-project-modal');
+}
+
+async function sendShareInvite() {
+  const email = document.getElementById('share-email-input').value.trim().toLowerCase();
+  if (!email) { showToast('Enter an email address','error'); return; }
+  if (!currentPersonalProject) return;
+
+  // Generate invite token
+  const token = btoa(JSON.stringify({
+    fileId: currentPersonalProject.fileId,
+    projectId: currentPersonalProject.id,
+    projectName: currentPersonalProject.name,
+    inviterEmail: currentUser.email,
+    inviterName: currentUser.name,
+    ts: Date.now()
+  })).replace(/=/g,'');
+
+  // Save token + collaborator to project
+  if (!currentPersonalProject.sharedWith) currentPersonalProject.sharedWith = [];
+  if (!currentPersonalProject.sharedWith.find(c=>c.email===email)) {
+    currentPersonalProject.sharedWith.push({ email, token, addedAt: new Date().toISOString() });
+  }
+  if (!currentPersonalProject.inviteTokens) currentPersonalProject.inviteTokens = {};
+  currentPersonalProject.inviteTokens[token] = { email, expires: Date.now() + 7*24*60*60*1000 };
+  await driveWrite(currentPersonalProject, currentPersonalProject.fileId);
+
+  // Share the Drive file with the invitee
+  try { await driveShare(currentPersonalProject.fileId, email, 'reader'); } catch(e) {}
+
+  // Open Gmail with invite
+  const siteUrl = window.location.origin;
+  const inviteLink = siteUrl + '?invite=' + token;
+  const subject = encodeURIComponent(currentUser.name + ' shared a FlowBoard project with you');
+  const body = encodeURIComponent(
+    'Hi,\n\n' + currentUser.name + ' has shared a project with you on FlowBoard: "' + currentPersonalProject.name + '"\n\n' +
+    'Click the link below to view it:\n' + inviteLink + '\n\n' +
+    'You\'ll need to sign in with your Google account (' + email + ').\n\n' +
+    'This link expires in 7 days.\n\n— FlowBoard'
+  );
+  window.open('https://mail.google.com/mail/?view=cm&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
+
+  closeModal('share-project-modal');
+  showToast('Gmail opened with invite link','success');
+}
+
+async function revokeShare(email) {
+  if (!currentPersonalProject) return;
+  currentPersonalProject.sharedWith = (currentPersonalProject.sharedWith||[]).filter(c=>c.email!==email);
+  await driveWrite(currentPersonalProject, currentPersonalProject.fileId);
+  openShareModal();
+  showToast('Access revoked for ' + email);
+}
+
+// Check for invite token on load
+function checkInviteToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('invite');
+  if (!token) return;
+  try {
+    const data = JSON.parse(atob(token + '=='));
+    localStorage.setItem('fb_pending_invite', JSON.stringify(data));
+    // Clean URL
+    window.history.replaceState({}, '', window.location.pathname);
+    showToast('Invite detected — sign in to accept it','success');
+  } catch(e) {}
+}
+
+async function processPendingInvite() {
+  const raw = localStorage.getItem('fb_pending_invite');
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    localStorage.removeItem('fb_pending_invite');
+    // Try to read the shared project file
+    const project = await driveRead(data.fileId);
+    if (!project) { showToast('Could not load shared project — link may have expired','error'); return; }
+    // Add to personal projects as a shared copy
+    if (!personalProjects.find(p=>p.id===project.id)) {
+      project.fileId = data.fileId;
+      project.sharedFromEmail = data.inviterEmail;
+      personalProjects.unshift(project);
+      renderPersonalSidebar();
+      renderPersonalHome();
+    }
+    showToast('Project "' + data.projectName + '" added from ' + data.inviterName,'success');
+  } catch(e) { console.error(e); }
+}
+
+// ═══════════════════════════════════════════
+// TRANSFER TO ORG
+// ═══════════════════════════════════════════
+function openTransferModal() {
+  if (!currentPersonalProject) return;
+  if (!orgs.length) { showToast('You are not a member of any organization','error'); return; }
+  const sel = document.getElementById('transfer-org-select');
+  sel.innerHTML = orgs.map(o => '<option value="'+o.id+'">'+esc(o.name)+'</option>').join('');
+  show('transfer-org-modal');
+}
+
+async function executeTransfer() {
+  if (!currentPersonalProject) return;
+  const orgId = document.getElementById('transfer-org-select').value;
+  const visibility = document.getElementById('transfer-visibility').value;
+  const org = orgs.find(o=>o.id===orgId);
+  if (!org || !org.projectsFolderId) { showToast('Cannot find org folder','error'); return; }
+
+  showToast('Transferring project...');
+  // Create new org project from personal project data
+  const orgProj = {
+    ...currentPersonalProject,
+    type: 'org_project',
+    visibility,
+    collaborators: [currentUser.email],
+    createdBy: currentUser.email,
+    fileId: undefined,
+    sharedWith: undefined,
+    inviteTokens: undefined
+  };
+  const newFileId = await driveWrite(orgProj, null, org.projectsFolderId, 'project_'+orgProj.id+'.json');
+  orgProj.fileId = newFileId;
+
+  // Delete personal project
+  await driveDelete(currentPersonalProject.fileId);
+  personalProjects = personalProjects.filter(p=>p.id!==currentPersonalProject.id);
+  currentPersonalProject = null;
+  viewingPersonalProject = false;
+
+  // Add to current org if it's open
+  if (currentOrg && currentOrg.id===orgId) {
+    if (!currentOrg.orgProjects) currentOrg.orgProjects = [];
+    currentOrg.orgProjects.unshift(orgProj);
+    renderOrgSidebar();
+  }
+
+  closeModal('transfer-org-modal');
+  renderPersonalSidebar();
+  renderPersonalHome();
+  showToast('Project transferred to ' + org.name,'success');
+}
+
 // ═══════════════════════════════════════════
 function show(id){document.getElementById(id).classList.remove('hidden')}
 function hide(id){document.getElementById(id).classList.add('hidden')}
