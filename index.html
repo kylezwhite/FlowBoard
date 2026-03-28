@@ -1229,25 +1229,55 @@ function initApp() {
 async function fetchUserInfo() {
   try {
     const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-      headers: { 'Authorization': `Bearer ${accessToken}` }
+      headers: { 'Authorization': 'Bearer ' + accessToken }
     });
+    if (!res.ok) {
+      const errText = await res.text();
+      console.error('userinfo error:', res.status, errText);
+      // If userinfo fails, try getting basic info from token itself
+      trySignInFromToken();
+      return;
+    }
     const info = await res.json();
-    currentUser = {
-      name: info.name || info.email,
-      email: info.email,
-      initials: (info.name || info.email).split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()
-    };
-    document.getElementById('user-name').textContent = currentUser.name;
-    document.getElementById('user-email').textContent = currentUser.email;
-    document.getElementById('user-av').textContent = currentUser.initials;
-    document.getElementById('join-email-display').value = currentUser.email;
-    hide('auth-screen'); hide('setup-screen');
-    show('app-screen');
-    ensurePersonalFolder().then(() => processPendingInvite());
-    loadOrgs();
+    if (!info.email) {
+      console.error('No email in userinfo response:', info);
+      trySignInFromToken();
+      return;
+    }
+    completeSignIn(info.name || info.email, info.email);
   } catch(e) {
+    console.error('fetchUserInfo exception:', e);
     showToast('Could not get user info. Try again.', 'error');
   }
+}
+
+function trySignInFromToken() {
+  // Fallback: decode the token to get basic user info
+  try {
+    const parts = accessToken.split('.');
+    if (parts.length === 3) {
+      const payload = JSON.parse(atob(parts[1]));
+      if (payload.email) { completeSignIn(payload.name || payload.email, payload.email); return; }
+    }
+  } catch(e) {}
+  // Last resort: ask user to try again
+  showToast('Sign-in failed — please try again', 'error');
+}
+
+function completeSignIn(name, email) {
+  currentUser = {
+    name,
+    email,
+    initials: name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()
+  };
+  document.getElementById('user-name').textContent = currentUser.name;
+  document.getElementById('user-email').textContent = currentUser.email;
+  document.getElementById('user-av').textContent = currentUser.initials;
+  document.getElementById('join-email-display').value = currentUser.email;
+  hide('auth-screen'); hide('setup-screen');
+  show('app-screen');
+  ensurePersonalFolder().then(() => processPendingInvite());
+  loadOrgs();
 }
 
 function saveClientId() {
@@ -1265,7 +1295,7 @@ function saveClientId() {
 function signIn() {
   if (!CLIENT_ID) { show('setup-screen'); hide('auth-screen'); return; }
   if (!tokenClient) { showToast('Still loading, please wait a moment.','error'); return; }
-  tokenClient.requestAccessToken({ prompt: 'consent' });
+  tokenClient.requestAccessToken({ prompt: 'select_account' });
 }
 
 function signOut() {
