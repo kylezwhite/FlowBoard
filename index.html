@@ -1274,8 +1274,9 @@ function completeSignIn(name, email) {
   document.getElementById('user-email').textContent = currentUser.email;
   document.getElementById('user-av').textContent = currentUser.initials;
   document.getElementById('join-email-display').value = currentUser.email;
-  hide('auth-screen'); hide('setup-screen');
-  show('app-screen');
+  document.getElementById('auth-screen').classList.add('hidden');
+  document.getElementById('setup-screen').classList.add('hidden');
+  document.getElementById('app-screen').classList.remove('hidden');
   ensurePersonalFolder().then(() => processPendingInvite());
   loadOrgs();
 }
