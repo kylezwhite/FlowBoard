@@ -11,6 +11,7 @@
 <link rel="manifest" href="data:application/json,{%22name%22:%22FlowBoard%22,%22short_name%22:%22FlowBoard%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%230f172a%22,%22theme_color%22:%22%230f172a%22}">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://apis.google.com/js/api.js" data-cfasync="false"></script>
+<script src="https://accounts.google.com/gsi/client" data-cfasync="false"></script>
 <style>
 :root {
   --bg: #0f172a;
@@ -871,32 +872,58 @@ const COLOR_HEX = ['#38bdf8','#34d399','#fbbf24','#f87171','#a78bfa','#f472b6'];
 // ═══════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════
+let tokenClient = null;
+
 window.onload = () => {
   if (!CLIENT_ID) { show('setup-screen'); hide('auth-screen'); }
-  else initFromGAPI();
+  else initApp();
 };
 
-function initFromGAPI() {
-  if (typeof gapi === 'undefined') {
-    showToast('Google API unavailable. Please refresh.','error');
+function initApp() {
+  // Load gapi client for Drive API calls
+  gapi.load('client', async () => {
+    await gapi.client.init({});
+    await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+    // Set up token client using new Google Identity Services
+    tokenClient = google.accounts.oauth2.initTokenClient({
+      client_id: CLIENT_ID,
+      scope: SCOPES,
+      callback: (tokenResponse) => {
+        if (tokenResponse.error) {
+          showToast('Sign-in failed: ' + tokenResponse.error, 'error');
+          return;
+        }
+        accessToken = tokenResponse.access_token;
+        gapi.client.setToken({ access_token: accessToken });
+        fetchUserInfo();
+      },
+    });
     show('auth-screen');
-    return;
-  }
-  gapi.load('client:auth2', initGAPI);
+  });
 }
 
-function loadGAPI() { initFromGAPI(); }
-
-function initGAPI() {
-  gapi.client.init({
-    clientId: CLIENT_ID,
-    scope: SCOPES,
-    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest'],
-  }).then(() => {
-    const auth = gapi.auth2.getAuthInstance();
-    if (auth.isSignedIn.get()) handleSignIn(auth.currentUser.get());
-    else { show('auth-screen'); hide('setup-screen'); }
-  }).catch(() => { show('auth-screen'); });
+async function fetchUserInfo() {
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { 'Authorization': `Bearer ${accessToken}` }
+    });
+    const info = await res.json();
+    currentUser = {
+      name: info.name || info.email,
+      email: info.email,
+      initials: (info.name || info.email).split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()
+    };
+    document.getElementById('user-name').textContent = currentUser.name;
+    document.getElementById('user-email').textContent = currentUser.email;
+    document.getElementById('user-av').textContent = currentUser.initials;
+    document.getElementById('join-email-display').value = currentUser.email;
+    hide('auth-screen'); hide('setup-screen');
+    show('app-screen');
+    ensurePersonalFolder();
+    loadOrgs();
+  } catch(e) {
+    showToast('Could not get user info. Try again.', 'error');
+  }
 }
 
 function saveClientId() {
@@ -904,8 +931,8 @@ function saveClientId() {
   if (!id) { showToast('Please enter a Client ID','error'); return; }
   CLIENT_ID = id;
   localStorage.setItem('fb_client_id', id);
-  hide('setup-screen'); show('auth-screen');
-  loadGAPI();
+  hide('setup-screen');
+  initApp();
 }
 
 // ═══════════════════════════════════════════
@@ -913,33 +940,20 @@ function saveClientId() {
 // ═══════════════════════════════════════════
 function signIn() {
   if (!CLIENT_ID) { show('setup-screen'); hide('auth-screen'); return; }
-  gapi.auth2.getAuthInstance().signIn()
-    .then(u => handleSignIn(u))
-    .catch(() => showToast('Sign-in failed. Check your Client ID.','error'));
-}
-
-function handleSignIn(user) {
-  const p = user.getBasicProfile();
-  currentUser = {
-    name: p.getName(), email: p.getEmail(),
-    initials: p.getName().split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase()
-  };
-  accessToken = user.getAuthResponse().access_token;
-  document.getElementById('user-name').textContent = currentUser.name;
-  document.getElementById('user-email').textContent = currentUser.email;
-  document.getElementById('user-av').textContent = currentUser.initials;
-  document.getElementById('join-email-display').value = currentUser.email;
-  hide('auth-screen'); hide('setup-screen');
-  show('app-screen');
-  ensurePersonalFolder();
-  loadOrgs();
+  if (!tokenClient) { showToast('Still loading, please wait a moment.','error'); return; }
+  tokenClient.requestAccessToken({ prompt: 'consent' });
 }
 
 function signOut() {
-  gapi.auth2.getAuthInstance().signOut().then(() => {
-    personalProjects = []; orgs = []; currentOrg = null;
-    hide('app-screen'); show('auth-screen');
-  });
+  if (accessToken) {
+    google.accounts.oauth2.revoke(accessToken, () => {});
+  }
+  accessToken = null;
+  gapi.client.setToken(null);
+  personalProjects = []; orgs = []; currentOrg = null;
+  currentUser = null;
+  hide('app-screen');
+  show('auth-screen');
 }
 
 // ═══════════════════════════════════════════
@@ -1494,9 +1508,9 @@ function renderProjectView(project, type) {
   const canEdit = type==='personal' || currentOrgRole==='admin' || project.createdBy===currentUser.email;
   const canDelete = type==='personal' || currentOrgRole==='admin' || project.createdBy===currentUser.email;
   actEl.innerHTML = `
-    ${type==='org' && canEdit ? '<button class="btn btn-ghost" onclick="openCollabsModal()">Collaborators</button>' : ''}
-    ${canEdit ? '<button class="btn btn-ghost" onclick="' + (type==='personal' ? 'openEditPersonalProject()' : 'openEditOrgProject()') + '">Edit</button>' : ''}
-    ${canDelete ? '<button class="btn btn-danger" onclick="' + (type==='personal' ? 'deletePersonalProject()' : 'deleteOrgProject()') + '">Delete</button>' : ''}
+    ${type==='org' && canEdit ? `<button class="btn btn-ghost" onclick="openCollabsModal()">Collaborators</button>` : ''}
+    ${canEdit ? `<button class="btn btn-ghost" onclick="${type==='personal'?'openEditPersonalProject()':'openEditOrgProject()}">Edit</button>` : ''}
+    ${canDelete ? `<button class="btn btn-danger" onclick="${type==='personal'?'deletePersonalProject()':'deleteOrgProject()}">Delete</button>` : ''}
   `;
 
   // Show/hide task add based on permission
