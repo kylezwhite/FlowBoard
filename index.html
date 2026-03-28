@@ -1494,9 +1494,9 @@ function renderProjectView(project, type) {
   const canEdit = type==='personal' || currentOrgRole==='admin' || project.createdBy===currentUser.email;
   const canDelete = type==='personal' || currentOrgRole==='admin' || project.createdBy===currentUser.email;
   actEl.innerHTML = `
-    ${type==='org' && canEdit ? `<button class="btn btn-ghost" onclick="openCollabsModal()">Collaborators</button>` : ''}
-    ${canEdit ? `<button class="btn btn-ghost" onclick="${type==='personal'?'openEditPersonalProject()':'openEditOrgProject()}">Edit</button>` : ''}
-    ${canDelete ? `<button class="btn btn-danger" onclick="${type==='personal'?'deletePersonalProject()':'deleteOrgProject()}">Delete</button>` : ''}
+    ${type==='org' && canEdit ? '<button class="btn btn-ghost" onclick="openCollabsModal()">Collaborators</button>' : ''}
+    ${canEdit ? '<button class="btn btn-ghost" onclick="' + (type==='personal' ? 'openEditPersonalProject()' : 'openEditOrgProject()') + '">Edit</button>' : ''}
+    ${canDelete ? '<button class="btn btn-danger" onclick="' + (type==='personal' ? 'deletePersonalProject()' : 'deleteOrgProject()') + '">Delete</button>' : ''}
   `;
 
   // Show/hide task add based on permission
