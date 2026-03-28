@@ -559,6 +559,35 @@ input,textarea,select{font-family:var(--font);outline:none}
   padding:4px 10px;border-radius:20px;font-size:12px;margin:3px;
 }
 .collab-pill button{background:none;color:var(--accent);font-size:16px;line-height:1;padding:0 2px;cursor:pointer}
+
+/* ── ASSIGNED TO ME ── */
+.assigned-project-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:12px;transition:border-color 0.15s}
+.assigned-project-card:hover{border-color:var(--border2)}
+.assigned-project-header{display:flex;align-items:center;gap:14px;padding:16px 20px;cursor:pointer}
+.assigned-project-header:hover{background:var(--bg3)}
+.assigned-proj-bar{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0}
+.assigned-proj-info{flex:1;min-width:0}
+.assigned-proj-name{font-size:15px;font-weight:600;margin-bottom:3px}
+.assigned-proj-source{font-size:12px;color:var(--text3)}
+.assigned-proj-stats{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.assigned-mini-progress{width:80px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.assigned-mini-fill{height:100%;border-radius:2px;transition:width 0.3s}
+.assigned-pct{font-size:12px;font-family:var(--mono);color:var(--text3);min-width:32px;text-align:right}
+.assigned-chevron{width:16px;height:16px;fill:var(--text3);transition:transform 0.2s;flex-shrink:0}
+.assigned-chevron.open{transform:rotate(90deg)}
+.assigned-task-list{border-top:1px solid var(--border);padding:10px 16px;display:flex;flex-direction:column;gap:6px}
+.assigned-task-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--r-sm);background:var(--bg3)}
+.assigned-task-title{flex:1;font-size:14px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.assigned-task-due{font-size:11px;color:var(--text3);white-space:nowrap}
+.assigned-task-due.overdue{color:var(--red)}
+
+/* ── ASSIGN ROW IN TASK PANEL ── */
+.assign-row{padding:10px 0;border-top:1px solid var(--border);margin-top:4px;display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.assign-label{font-size:12px;font-weight:500;color:var(--text2);padding-top:4px;white-space:nowrap}
+.assignee-chips{display:flex;flex-wrap:wrap;gap:4px;flex:1}
+.assignee-chip{display:inline-flex;align-items:center;gap:5px;background:var(--accent-dim);color:var(--accent);padding:3px 9px;border-radius:20px;font-size:12px}
+.assignee-chip button{background:none;color:var(--accent);font-size:14px;line-height:1;padding:0 1px;cursor:pointer}
+.assign-select{padding:5px 10px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);font-size:12px;font-family:var(--font)}
 </style>
 </head>
 <body>
@@ -636,6 +665,10 @@ input,textarea,select{font-family:var(--font);outline:none}
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
           My Projects
         </div>
+        <div class="sb-item" id="nav-assigned-to-me" onclick="showAssignedToMe()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          Assigned to Me
+        </div>
       </div>
       <div class="sb-section" style="flex:1">
         <div class="sb-label">Projects</div>
@@ -698,6 +731,26 @@ input,textarea,select{font-family:var(--font);outline:none}
       </div>
       <div class="content">
         <div id="personal-projects-grid" class="proj-grid"></div>
+      </div>
+    </div>
+
+    <!-- ── ASSIGNED TO ME ── -->
+    <div id="view-assigned-to-me" class="hidden">
+      <div class="topbar">
+        <div class="topbar-left">
+          <h1>Assigned to Me</h1>
+          <p id="assigned-sub">Tasks assigned to you across all projects</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost" onclick="refreshAssignedToMe()">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            Refresh
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div id="assigned-loading" class="loading-state"><div class="spin"></div> Loading your assignments...</div>
+        <div id="assigned-list" class="hidden"></div>
       </div>
     </div>
 
@@ -933,7 +986,44 @@ input,textarea,select{font-family:var(--font);outline:none}
   </div>
 </div>
 
-<!-- Share Personal Project -->
+<!-- Delete Org -->
+<div id="delete-org-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 style="color:var(--red)">Delete Organization</h3>
+    <p style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      This will permanently delete <strong id="delete-org-name" style="color:var(--text)"></strong> and all its projects. This cannot be undone.
+    </p>
+    <div class="modal-info" style="border-color:rgba(248,113,113,0.3);background:var(--red-dim)">
+      All org project files will be deleted from Google Drive. Members will lose access immediately.
+    </div>
+    <div class="form-field" style="margin-top:16px">
+      <label>Type <strong style="color:var(--red);letter-spacing:0.05em">DELETE</strong> to confirm</label>
+      <input type="text" id="delete-org-confirm" placeholder="DELETE" autocomplete="off" style="letter-spacing:0.05em">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('delete-org-modal')">Cancel</button>
+      <button class="btn btn-danger" onclick="executeDeleteOrg()">Permanently Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer Org Ownership (shown when last admin tries to leave) -->
+<div id="transfer-owner-modal" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Transfer Ownership Before Leaving</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:16px;line-height:1.6">
+      You are the only admin. You must promote another member to admin before leaving.
+    </p>
+    <div class="form-field">
+      <label>Promote to Admin</label>
+      <select id="transfer-owner-select"></select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('transfer-owner-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="promoteAndLeave()">Promote &amp; Leave</button>
+    </div>
+  </div>
+</div>
 <div id="share-project-modal" class="modal-overlay hidden">
   <div class="modal">
     <h3>Share Project</h3>
@@ -1520,12 +1610,15 @@ function showOrgMembers() {
   document.getElementById('org-members-sub').textContent = `${currentOrg.members.length} member${currentOrg.members.length!==1?'s':''}`;
 
   const actions = document.getElementById('org-members-actions');
-  actions.innerHTML = currentOrgRole==='admin'
+  const inviteBtn = currentOrgRole==='admin'
     ? `<button class="btn btn-primary" onclick="openModal('invite-modal')">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
         Invite Member
-      </button>`
-    : '';
+      </button>` : '';
+  const leaveBtn = `<button class="btn btn-ghost" onclick="leaveOrg()">Leave Org</button>`;
+  const deleteBtn = currentOrgRole==='admin'
+    ? `<button class="btn btn-danger" onclick="openDeleteOrgModal()">Delete Org</button>` : '';
+  actions.innerHTML = inviteBtn + leaveBtn + deleteBtn;
 
   const list = document.getElementById('org-members-list');
   list.innerHTML = currentOrg.members.map(m => {
@@ -1955,7 +2048,7 @@ function switchWorkspace(ws) {
 // ═══════════════════════════════════════════
 // VIEW MANAGER
 // ═══════════════════════════════════════════
-const VIEWS = ['view-personal-home','view-org-home','view-org-projects','view-org-members','view-project'];
+const VIEWS = ['view-personal-home','view-assigned-to-me','view-org-home','view-org-projects','view-org-members','view-project'];
 function showView(id) {
   VIEWS.forEach(v => document.getElementById(v).classList.toggle('hidden', v!==id));
   if (id==='view-project' && workspace==='personal') viewingPersonalProject = true;
@@ -2037,7 +2130,8 @@ function toggleTaskDetail(taskId, type) {
           '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>' +
           'Alert Settings' +
         '</button>' +
-      '</div>' : '');
+      '</div>' : '') +
+    buildAssignRow(task, taskId, type, project);
 
   taskRow.insertAdjacentElement('afterend', panel);
 }
@@ -2394,8 +2488,348 @@ async function executeTransfer() {
 }
 
 // ═══════════════════════════════════════════
-function show(id){document.getElementById(id).classList.remove('hidden')}
-function hide(id){document.getElementById(id).classList.add('hidden')}
+// LEAVE / DELETE ORG
+// ═══════════════════════════════════════════
+async function leaveOrg() {
+  if (!currentOrg) return;
+  const admins = currentOrg.members.filter(m => m.role==='admin' || m.role==='owner');
+  const otherAdmins = admins.filter(m => m.email !== currentUser.email);
+  const isOnlyAdmin = (currentOrgRole==='admin' || currentOrgRole==='owner') && otherAdmins.length === 0;
+  const otherMembers = currentOrg.members.filter(m => m.email !== currentUser.email);
+
+  if (isOnlyAdmin && otherMembers.length > 0) {
+    const sel = document.getElementById('transfer-owner-select');
+    sel.innerHTML = otherMembers.map(m =>
+      '<option value="'+esc(m.email)+'">'+esc(m.name||m.email)+'</option>'
+    ).join('');
+    show('transfer-owner-modal');
+    return;
+  }
+
+  if (!confirm('Leave "' + currentOrg.name + '"? You will lose access to all org projects.')) return;
+
+  currentOrg.members = currentOrg.members.filter(m => m.email !== currentUser.email);
+  if (currentOrg.members.length > 0) {
+    await driveWrite(currentOrg, currentOrg.fileId);
+  } else {
+    try { await driveDelete(currentOrg.fileId); } catch(e) {}
+  }
+  orgs = orgs.filter(o => o.id !== currentOrg.id);
+  currentOrg = null; currentOrgProject = null;
+  hide('sb-org-content');
+  showOrgHome();
+  showToast('You have left the organization');
+}
+
+async function promoteAndLeave() {
+  const email = document.getElementById('transfer-owner-select').value;
+  if (!email || !currentOrg) return;
+  const member = currentOrg.members.find(m => m.email === email);
+  if (member) member.role = 'admin';
+  currentOrg.members = currentOrg.members.filter(m => m.email !== currentUser.email);
+  await driveWrite(currentOrg, currentOrg.fileId);
+  orgs = orgs.filter(o => o.id !== currentOrg.id);
+  currentOrg = null; currentOrgProject = null;
+  closeModal('transfer-owner-modal');
+  hide('sb-org-content');
+  showOrgHome();
+  showToast('Ownership transferred — you have left the org');
+}
+
+function openDeleteOrgModal() {
+  if (!currentOrg || currentOrgRole !== 'admin') return;
+  document.getElementById('delete-org-name').textContent = currentOrg.name;
+  document.getElementById('delete-org-confirm').value = '';
+  show('delete-org-modal');
+}
+
+async function executeDeleteOrg() {
+  const input = document.getElementById('delete-org-confirm').value.trim();
+  if (input !== 'DELETE') {
+    showToast('You must type DELETE in all caps to confirm', 'error');
+    const field = document.getElementById('delete-org-confirm');
+    field.style.borderColor = 'var(--red)';
+    field.focus();
+    setTimeout(() => { field.style.borderColor = ''; }, 1500);
+    return;
+  }
+  if (!currentOrg) return;
+  showToast('Deleting organization...');
+  try {
+    if (currentOrg.projectsFolderId) {
+      const files = await driveList("'"+currentOrg.projectsFolderId+"' in parents and mimeType='application/json' and trashed=false", 'files(id)');
+      for (const f of files) { try { await driveDelete(f.id); } catch(e) {} }
+    }
+    await driveDelete(currentOrg.fileId);
+  } catch(e) { console.error(e); }
+  orgs = orgs.filter(o => o.id !== currentOrg.id);
+  currentOrg = null; currentOrgProject = null;
+  closeModal('delete-org-modal');
+  hide('sb-org-content');
+  showOrgHome();
+  showToast('Organization permanently deleted');
+}
+
+// ═══════════════════════════════════════════
+// ═══════════════════════════════════════════
+// ASSIGNMENT
+// ═══════════════════════════════════════════
+
+function canAssignOthers(type, project) {
+  if (type === 'personal') return true; // personal project owner
+  return currentOrgRole === 'admin' || currentOrgRole === 'owner' || project.createdBy === currentUser.email;
+}
+
+function getAssignableMembers(type, project) {
+  if (type === 'personal') {
+    const collabs = (project.sharedWith || []).map(c => ({ email: c.email, name: c.email }));
+    return [{ email: currentUser.email, name: currentUser.name + ' (you)' }, ...collabs];
+  }
+  return currentOrg ? currentOrg.members : [];
+}
+
+function buildAssignRow(task, taskId, type, project) {
+  const assignees = task.assignees || [];
+  const assignableMembers = getAssignableMembers(type, project);
+  const canAssignAll = canAssignOthers(type, project);
+
+  // Members can only self-assign — filter options accordingly
+  const options = canAssignAll
+    ? assignableMembers.filter(m => !assignees.includes(m.email))
+    : assignableMembers.filter(m => m.email === currentUser.email && !assignees.includes(currentUser.email));
+
+  const chips = assignees.map(email => {
+    const member = assignableMembers.find(m => m.email === email);
+    const name = member ? (member.name || email) : email;
+    const canRemove = canAssignAll || email === currentUser.email;
+    return '<span class="assignee-chip">' + esc(name.split(' ')[0]) +
+      (canRemove ? '<button onclick="unassignTask(\''+taskId+'\',\''+type+'\',\''+esc(email)+'\')">×</button>' : '') +
+      '</span>';
+  }).join('');
+
+  const dropdown = options.length
+    ? '<select class="assign-select" onchange="assignTask(\''+taskId+'\',\''+type+'\',this.value);this.value=\'\'">'+
+        '<option value="">+ Assign...</option>' +
+        options.map(m => '<option value="'+esc(m.email)+'">'+esc(m.name||m.email)+'</option>').join('') +
+      '</select>'
+    : '';
+
+  return '<div class="assign-row">' +
+    '<span class="assign-label">Assigned:</span>' +
+    '<div class="assignee-chips">' +
+      (chips || '<span style="font-size:12px;color:var(--text3)">Nobody yet</span>') +
+      dropdown +
+    '</div>' +
+  '</div>';
+}
+
+async function assignTask(taskId, type, email) {
+  if (!email) return;
+  const project = type === 'personal' ? currentPersonalProject : currentOrgProject;
+  const task = project.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  if (!task.assignees) task.assignees = [];
+  if (!task.assignees.includes(email)) {
+    task.assignees.push(email);
+    await driveWrite(project, project.fileId);
+    syncProjectToList(project, type);
+  }
+  // Refresh the detail panel
+  const panel = document.getElementById('detail-' + taskId);
+  if (panel) { panel.remove(); _openDetailId = null; }
+  renderTaskList(project, type);
+  toggleTaskDetail(taskId, type);
+  showToast('Assigned');
+}
+
+async function unassignTask(taskId, type, email) {
+  const project = type === 'personal' ? currentPersonalProject : currentOrgProject;
+  const task = project.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  task.assignees = (task.assignees || []).filter(e => e !== email);
+  await driveWrite(project, project.fileId);
+  syncProjectToList(project, type);
+  const panel = document.getElementById('detail-' + taskId);
+  if (panel) { panel.remove(); _openDetailId = null; }
+  renderTaskList(project, type);
+  toggleTaskDetail(taskId, type);
+  showToast('Unassigned');
+}
+
+// ═══════════════════════════════════════════
+// ASSIGNED TO ME VIEW
+// ═══════════════════════════════════════════
+let _assignedExpanded = {};
+
+async function showAssignedToMe() {
+  showView('view-assigned-to-me');
+  setActiveNav('nav-assigned-to-me');
+  _assignedExpanded = {};
+  await refreshAssignedToMe();
+}
+
+async function refreshAssignedToMe() {
+  show('assigned-loading');
+  hide('assigned-list');
+
+  const myEmail = currentUser.email;
+  const groups = []; // { projectName, source, colorHex, tasks[], projectId, type, fileId }
+
+  // Scan personal projects (shared ones too)
+  for (const p of personalProjects) {
+    const myTasks = (p.tasks || []).filter(t => (t.assignees || []).includes(myEmail));
+    if (myTasks.length) {
+      const source = p.sharedFromEmail ? 'Shared by ' + p.sharedFromEmail : 'Personal';
+      groups.push({ projectName: p.name, source, colorHex: p.colorHex || '#38bdf8', tasks: myTasks, projectId: p.id, type: 'personal', fileId: p.fileId });
+    }
+  }
+
+  // Scan all org projects
+  for (const org of orgs) {
+    // Load org projects if not already loaded
+    if (!org.orgProjects) {
+      const folderId = org.projectsFolderId;
+      if (!folderId) continue;
+      const files = await driveList("'" + folderId + "' in parents and mimeType='application/json' and trashed=false");
+      org.orgProjects = [];
+      for (const f of files) {
+        const d = await driveRead(f.id);
+        if (d && d.type === 'org_project') {
+          const canSee = d.visibility === 'public' || org.myRole === 'admin' || (d.collaborators||[]).includes(myEmail);
+          if (canSee) org.orgProjects.push({...d, fileId: f.id});
+        }
+      }
+    }
+    for (const p of (org.orgProjects || [])) {
+      const myTasks = (p.tasks || []).filter(t => (t.assignees || []).includes(myEmail));
+      if (myTasks.length) {
+        groups.push({ projectName: p.name, source: org.name, colorHex: p.colorHex || '#38bdf8', tasks: myTasks, projectId: p.id, type: 'org', fileId: p.fileId, orgId: org.id });
+      }
+    }
+  }
+
+  hide('assigned-loading');
+  const listEl = document.getElementById('assigned-list');
+  listEl.classList.remove('hidden');
+
+  const sub = document.getElementById('assigned-sub');
+  const totalTasks = groups.reduce((s, g) => s + g.tasks.length, 0);
+  sub.textContent = totalTasks + ' task' + (totalTasks !== 1 ? 's' : '') + ' assigned to you across ' + groups.length + ' project' + (groups.length !== 1 ? 's' : '');
+
+  if (!groups.length) {
+    listEl.innerHTML = '<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div><h3>Nothing assigned to you</h3><p>Tasks assigned to you across all projects will appear here.</p></div>';
+    return;
+  }
+
+  _assignedGroups = groups;
+  listEl.innerHTML = groups.map((g, idx) => renderAssignedGroup(g, idx)).join('');
+}
+
+function renderAssignedGroup(g, idx) {
+  const done = g.tasks.filter(t => t.status === 'done').length;
+  const total = g.tasks.length;
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const isOpen = !!_assignedExpanded[idx];
+  const now = new Date();
+
+  const taskRows = isOpen ? g.tasks.map(t => {
+    const sc = t.status==='todo'?'sel-todo':t.status==='progress'?'sel-progress':'sel-done';
+    let dueStr = '';
+    if (t.dueDate) {
+      const due = new Date(t.dueDate);
+      const isOverdue = due < now && t.status !== 'done';
+      dueStr = '<span class="assigned-task-due ' + (isOverdue?'overdue':'') + '">📅 ' + due.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + (isOverdue?' · PAST DUE':'') + '</span>';
+    }
+    return '<div class="assigned-task-row">' +
+      '<div class="task-chk ' + (t.status==='done'?'is-done':'') + '" onclick="assignedToggleTask(\'' + idx + '\',\'' + t.id + '\')" style="width:19px;height:19px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;cursor:pointer;display:flex;align-items:center;justify-content:center;background:' + (t.status==='done'?'var(--done-c)':'transparent') + ';border-color:' + (t.status==='done'?'var(--done-c)':'var(--border2)') + '">' +
+        (t.status==='done'?'<svg viewBox="0 0 24 24" style="width:10px;height:10px;fill:var(--bg)"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>':'') +
+      '</div>' +
+      '<span class="assigned-task-title">' + esc(t.title) + '</span>' +
+      dueStr +
+      '<select class="status-sel ' + sc + '" onchange="assignedSetStatus(\'' + idx + '\',\'' + t.id + '\',this.value)">' +
+        '<option value="todo"' + (t.status==='todo'?' selected':'') + '>To Do</option>' +
+        '<option value="progress"' + (t.status==='progress'?' selected':'') + '>In Progress</option>' +
+        '<option value="done"' + (t.status==='done'?' selected':'') + '>Complete</option>' +
+      '</select>' +
+    '</div>';
+  }).join('') : '';
+
+  return '<div class="assigned-project-card" id="agroup-'+idx+'">' +
+    '<div class="assigned-project-header" onclick="toggleAssignedGroup('+idx+')">' +
+      '<div class="assigned-proj-bar" style="background:'+g.colorHex+'"></div>' +
+      '<div class="assigned-proj-info">' +
+        '<div class="assigned-proj-name">' + esc(g.projectName) + '</div>' +
+        '<div class="assigned-proj-source">' + esc(g.source) + ' · ' + total + ' task' + (total!==1?'s':'') + ' assigned to you</div>' +
+      '</div>' +
+      '<div class="assigned-proj-stats">' +
+        '<div class="assigned-mini-progress"><div class="assigned-mini-fill" style="width:'+pct+'%;background:'+g.colorHex+'"></div></div>' +
+        '<span class="assigned-pct">' + pct + '%</span>' +
+      '</div>' +
+      '<svg class="assigned-chevron ' + (isOpen?'open':'') + '" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>' +
+    '</div>' +
+    (isOpen ? '<div class="assigned-task-list">' + taskRows + '</div>' : '') +
+  '</div>';
+}
+
+// Store group data for status updates
+let _assignedGroups = [];
+
+async function refreshAssignedToMeGroups() {
+  // Re-render current groups without re-fetching from Drive
+  const listEl = document.getElementById('assigned-list');
+  if (!listEl || listEl.classList.contains('hidden')) return;
+  listEl.innerHTML = _assignedGroups.map((g, idx) => renderAssignedGroup(g, idx)).join('');
+}
+
+function toggleAssignedGroup(idx) {
+  _assignedExpanded[idx] = !_assignedExpanded[idx];
+  const card = document.getElementById('agroup-' + idx);
+  if (card) card.outerHTML = renderAssignedGroup(_assignedGroups[idx], idx);
+}
+
+async function assignedSetStatus(groupIdx, taskId, status) {
+  const g = _assignedGroups[groupIdx];
+  if (!g) return;
+  const task = g.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  task.status = status;
+  // Write back to the source project file
+  await fetch(''); // no-op placeholder — actual write below
+  const project = findProjectByFileId(g.fileId);
+  if (project) {
+    const sourceTask = project.tasks.find(t => t.id === taskId);
+    if (sourceTask) { sourceTask.status = status; await driveWrite(project, project.fileId); }
+  }
+  const card = document.getElementById('agroup-' + groupIdx);
+  if (card) card.outerHTML = renderAssignedGroup(g, groupIdx);
+}
+
+async function assignedToggleTask(groupIdx, taskId) {
+  const g = _assignedGroups[groupIdx];
+  if (!g) return;
+  const task = g.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  task.status = task.status === 'done' ? 'todo' : 'done';
+  const project = findProjectByFileId(g.fileId);
+  if (project) {
+    const sourceTask = project.tasks.find(t => t.id === taskId);
+    if (sourceTask) { sourceTask.status = task.status; await driveWrite(project, project.fileId); }
+  }
+  const card = document.getElementById('agroup-' + groupIdx);
+  if (card) card.outerHTML = renderAssignedGroup(g, groupIdx);
+}
+
+function findProjectByFileId(fileId) {
+  const personal = personalProjects.find(p => p.fileId === fileId);
+  if (personal) return personal;
+  for (const org of orgs) {
+    const op = (org.orgProjects || []).find(p => p.fileId === fileId);
+    if (op) return op;
+  }
+  return null;
+}
+
+
 function closeModal(id){document.getElementById(id).classList.add('hidden')}
 function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 function hashStr(s){let h=0;for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;}return h}
