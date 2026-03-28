@@ -1714,4 +1714,11 @@ document.querySelectorAll('.modal-overlay').forEach(el=>{
   el.addEventListener('click', e=>{if(e.target===el)el.classList.add('hidden')});
 });
 
-// Ente
+// Enter key on task input
+document.addEventListener('DOMContentLoaded', ()=>{
+  const ti = document.getElementById('new-task-input');
+  if (ti) ti.addEventListener('keydown', e=>{ if(e.key==='Enter') addTask(); });
+});
+</script>
+</body>
+</html>
