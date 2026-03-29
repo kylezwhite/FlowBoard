@@ -1,0 +1,2816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<meta name="mobile-web-app-capable" content="yes">
+<title>FlowBoard</title>
+<link rel="manifest" href="manifest.json">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://apis.google.com/js/api.js" data-cfasync="false"></script>
+<script src="https://accounts.google.com/gsi/client" data-cfasync="false"></script>
+<style>
+/* ══════════════════════════════════════════
+   THEME SYSTEM
+══════════════════════════════════════════ */
+:root {
+  --font: 'Outfit', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --r: 10px; --r-sm: 6px; --r-lg: 14px;
+  --shadow: 0 2px 12px rgba(0,0,0,0.15);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.2);
+
+  /* Status colors (same in both themes) */
+  --todo-c: #818cf8; --todo-bg: rgba(129,140,248,0.12);
+  --prog-c: #f59e0b; --prog-bg: rgba(245,158,11,0.12);
+  --done-c: #10b981; --done-bg: rgba(16,185,129,0.12);
+  --danger: #ef4444; --danger-bg: rgba(239,68,68,0.12);
+  --warn: #f59e0b; --warn-bg: rgba(245,158,11,0.1);
+}
+
+/* DARK THEME (default) */
+[data-theme="dark"] {
+  --bg: #0f172a;
+  --bg2: #1e293b;
+  --bg3: #273548;
+  --surface: #1e293b;
+  --border: rgba(148,163,184,0.12);
+  --border2: rgba(148,163,184,0.22);
+  --text: #f1f5f9;
+  --text2: #94a3b8;
+  --text3: #64748b;
+  --accent: #38bdf8;
+  --accent-bg: rgba(56,189,248,0.12);
+  --accent-glow: rgba(56,189,248,0.2);
+  --sidebar-bg: #1e293b;
+  --input-bg: #273548;
+}
+
+/* LIGHT THEME */
+[data-theme="light"] {
+  --bg: #f8fafc;
+  --bg2: #ffffff;
+  --bg3: #f1f5f9;
+  --surface: #ffffff;
+  --border: rgba(0,0,0,0.08);
+  --border2: rgba(0,0,0,0.14);
+  --text: #0f172a;
+  --text2: #475569;
+  --text3: #94a3b8;
+  --accent: #0284c7;
+  --accent-bg: rgba(2,132,199,0.1);
+  --accent-glow: rgba(2,132,199,0.15);
+  --sidebar-bg: #ffffff;
+  --input-bg: #f8fafc;
+}
+
+/* SLATE THEME */
+[data-theme="slate"] {
+  --bg: #1a1f2e;
+  --bg2: #242938;
+  --bg3: #2e3448;
+  --surface: #242938;
+  --border: rgba(148,163,184,0.1);
+  --border2: rgba(148,163,184,0.18);
+  --text: #e2e8f0;
+  --text2: #8892a4;
+  --text3: #5a6478;
+  --accent: #7c3aed;
+  --accent-bg: rgba(124,58,237,0.12);
+  --accent-glow: rgba(124,58,237,0.2);
+  --sidebar-bg: #1e2436;
+  --input-bg: #2e3448;
+}
+
+/* ── RESET ── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background 0.2s,color 0.2s}
+a{color:var(--accent);text-decoration:none}
+button{font-family:var(--font);cursor:pointer;border:none;outline:none;background:none}
+input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
+.hidden{display:none!important}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ══════════════════════════════════════════
+   AUTH & SETUP
+══════════════════════════════════════════ */
+.auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.auth-card{width:380px;text-align:center;padding:20px}
+.auth-logo{width:60px;height:60px;background:linear-gradient(135deg,var(--accent),#6366f1);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 32px var(--accent-glow)}
+.auth-logo svg{width:28px;height:28px;fill:white}
+.auth-card h1{font-size:30px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
+.auth-card h1 span{color:var(--accent)}
+.auth-card>p{color:var(--text2);font-size:14px;margin-bottom:32px;line-height:1.6}
+.btn-google{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:13px 20px;background:var(--surface);border:1.5px solid var(--border2);border-radius:var(--r);font-size:14px;font-weight:500;color:var(--text);transition:all 0.2s;cursor:pointer}
+.btn-google:hover{border-color:var(--accent);box-shadow:0 0 16px var(--accent-glow)}
+.btn-google img{width:18px;height:18px}
+.auth-note{font-size:12px;color:var(--text3);margin-top:18px;line-height:1.7}
+
+.setup-card{width:500px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:36px;box-shadow:var(--shadow-lg)}
+.setup-card h2{font-size:20px;font-weight:600;margin-bottom:8px}
+.setup-card>p{color:var(--text2);font-size:13px;margin-bottom:20px;line-height:1.6}
+.setup-steps{background:var(--bg3);border-radius:var(--r);padding:14px 16px;font-size:12px;color:var(--text2);line-height:2;margin-bottom:18px;border:1px solid var(--border)}
+.setup-steps strong{color:var(--text)}
+.setup-steps a{color:var(--accent)}
+
+/* ══════════════════════════════════════════
+   LAYOUT
+══════════════════════════════════════════ */
+#app{display:flex;min-height:100vh}
+.sidebar{width:252px;background:var(--sidebar-bg);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:50;transition:background 0.2s}
+.main{margin-left:252px;flex:1;display:flex;flex-direction:column;min-height:100vh}
+
+/* ── SIDEBAR ── */
+.sb-head{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.sb-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#6366f1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-logo svg{width:15px;height:15px;fill:white}
+.sb-appname{font-size:16px;font-weight:700;letter-spacing:-0.3px}
+
+.ws-switcher{margin:8px;border-radius:var(--r);border:1px solid var(--border);overflow:hidden;display:flex}
+.ws-btn{flex:1;padding:7px 8px;font-size:12px;font-weight:500;color:var(--text3);background:transparent;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:5px}
+.ws-btn svg{width:12px;height:12px}
+.ws-btn.active{background:var(--bg3);color:var(--text)}
+
+.sb-section{padding:10px 8px 4px}
+.sb-label{font-size:10px;font-weight:600;color:var(--text3);letter-spacing:0.08em;text-transform:uppercase;padding:0 8px;margin-bottom:3px}
+.sb-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r-sm);cursor:pointer;font-size:13px;color:var(--text2);transition:all 0.12s;user-select:none}
+.sb-item:hover{background:var(--bg3);color:var(--text)}
+.sb-item.active{background:var(--accent-bg);color:var(--accent);font-weight:500}
+.sb-item svg{width:14px;height:14px;flex-shrink:0;opacity:0.6}
+.sb-item.active svg{opacity:1}
+.sb-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0}
+.sb-count{margin-left:auto;font-size:11px;font-family:var(--mono);background:var(--bg3);padding:1px 5px;border-radius:6px;color:var(--text3)}
+.sb-item.active .sb-count{background:var(--accent-bg);color:var(--accent)}
+
+.sb-bottom{margin-top:auto;padding:10px;border-top:1px solid var(--border)}
+.user-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--bg3);border-radius:var(--r-sm);margin-bottom:6px}
+.user-av{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);color:white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.user-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.user-email{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-actions{display:flex;gap:6px}
+.sb-action-btn{flex:1;padding:7px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r-sm);font-size:12px;color:var(--text2);transition:all 0.15s;text-align:center}
+.sb-action-btn:hover{background:var(--border);color:var(--text)}
+
+/* ── TOPBAR ── */
+.topbar{padding:18px 28px 14px;display:flex;align-items:flex-start;justify-content:space-between;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:40;transition:background 0.2s}
+.topbar-left .breadcrumb{font-size:12px;color:var(--text3);margin-bottom:3px;display:flex;align-items:center;gap:5px}
+.breadcrumb span{cursor:pointer;transition:color 0.12s}
+.breadcrumb span:hover{color:var(--accent)}
+.breadcrumb-sep{opacity:0.4}
+.topbar-title{font-size:20px;font-weight:700;letter-spacing:-0.3px;display:flex;align-items:center;gap:8px}
+.topbar-sub{font-size:13px;color:var(--text2);margin-top:2px}
+.topbar-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;margin-top:2px}
+
+/* ── CONTENT ── */
+.content{padding:24px 28px;flex:1}
+
+/* ══════════════════════════════════════════
+   BUTTONS
+══════════════════════════════════════════ */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r-sm);font-size:13px;font-weight:500;transition:all 0.15s;cursor:pointer;border:none;font-family:var(--font)}
+.btn svg{width:14px;height:14px;flex-shrink:0}
+.btn-primary{background:var(--accent);color:white}
+.btn-primary:hover{opacity:0.9;box-shadow:0 0 12px var(--accent-glow)}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border)}
+.btn-ghost:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.btn-danger{background:var(--danger-bg);color:var(--danger)}
+.btn-danger:hover{background:rgba(239,68,68,0.18)}
+.btn-success{background:var(--done-bg);color:var(--done-c)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-xs{padding:4px 10px;font-size:11px;border-radius:16px;border:1px solid var(--border);color:var(--text3);display:inline-flex;align-items:center;gap:4px}
+.btn-xs svg{width:11px;height:11px}
+.btn-xs:hover{background:var(--bg3);color:var(--text);border-color:var(--border2)}
+.btn-xs.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
+
+/* ══════════════════════════════════════════
+   FORM ELEMENTS
+══════════════════════════════════════════ */
+.form-field{margin-bottom:14px}
+.form-field label{display:block;font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+.form-field input,.form-field textarea,.form-field select{width:100%;padding:9px 12px;background:var(--input-bg);border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:13px;color:var(--text);transition:border-color 0.15s;resize:vertical}
+.form-field input:focus,.form-field textarea:focus,.form-field select:focus{border-color:var(--accent)}
+.form-field input::placeholder,.form-field textarea::placeholder{color:var(--text3)}
+.form-field select option{background:var(--surface);color:var(--text)}
+
+/* ══════════════════════════════════════════
+   EMPTY STATE
+══════════════════════════════════════════ */
+.empty{text-align:center;padding:60px 40px;color:var(--text3)}
+.empty-icon{width:52px;height:52px;background:var(--bg3);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px}
+.empty-icon svg{width:24px;height:24px;fill:var(--text3)}
+.empty h3{font-size:16px;font-weight:600;color:var(--text2);margin-bottom:6px}
+.empty p{font-size:13px;max-width:280px;margin:0 auto 20px;line-height:1.6}
+
+/* ══════════════════════════════════════════
+   PROJECT GRID
+══════════════════════════════════════════ */
+.sort-bar{display:flex;align-items:center;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.sort-bar-label{font-size:12px;color:var(--text3)}
+.sort-select{padding:5px 10px;background:var(--surface);border:1px solid var(--border);border-radius:16px;font-size:12px;color:var(--text2);font-family:var(--font);cursor:pointer}
+.sort-select:focus{border-color:var(--accent)}
+
+.proj-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
+.proj-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;cursor:pointer;transition:all 0.18s;position:relative;overflow:hidden}
+.proj-card:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:var(--shadow)}
+.proj-card-bar{position:absolute;top:0;left:0;right:0;height:3px}
+.proj-card h3{font-size:15px;font-weight:600;margin-bottom:5px;padding-right:24px}
+.proj-card-desc{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5;min-height:18px}
+.proj-badges{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:12px}
+.badge-todo{background:var(--todo-bg);color:var(--todo-c)}
+.badge-prog{background:var(--prog-bg);color:var(--prog-c)}
+.badge-done{background:var(--done-bg);color:var(--done-c)}
+.badge-neutral{background:var(--bg3);color:var(--text3)}
+.badge-hidden{background:var(--danger-bg);color:var(--danger)}
+.badge-admin{background:var(--accent-bg);color:var(--accent)}
+.proj-prog-bar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.proj-prog-fill{height:100%;border-radius:2px;transition:width 0.3s}
+
+/* ══════════════════════════════════════════
+   PROJECT VIEW
+══════════════════════════════════════════ */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px}
+.stat-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px}
+.stat-val{font-size:28px;font-weight:700;font-family:var(--mono)}
+.stat-card.todo .stat-val{color:var(--todo-c)}
+.stat-card.prog .stat-val{color:var(--prog-c)}
+.stat-card.done .stat-val{color:var(--done-c)}
+
+.progress-wrap{margin-bottom:20px}
+.progress-info{display:flex;justify-content:space-between;font-size:12px;color:var(--text3);margin-bottom:5px}
+.progress-bar{height:5px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--done-c));border-radius:3px;transition:width 0.3s}
+
+/* ── TASK TOOLBAR ── */
+.task-toolbar{margin-bottom:14px}
+.task-add-row{display:flex;gap:8px;margin-bottom:12px}
+.task-input{flex:1;padding:9px 14px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:13px;color:var(--text);transition:border-color 0.15s}
+.task-input:focus{border-color:var(--accent)}
+.task-input::placeholder{color:var(--text3)}
+.filter-sort-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.filter-btn{padding:5px 12px;border-radius:16px;font-size:12px;font-weight:500;background:transparent;color:var(--text3);border:1px solid var(--border);transition:all 0.12s;cursor:pointer;font-family:var(--font)}
+.filter-btn:hover{color:var(--text);border-color:var(--border2)}
+.filter-btn.active{background:var(--accent-bg);color:var(--accent);border-color:var(--accent)}
+.filter-sep{flex:1}
+
+/* ── TASK LIST ── */
+.task-list{display:flex;flex-direction:column;gap:6px}
+.task-row{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;transition:border-color 0.12s}
+.task-row:hover{border-color:var(--border2)}
+.task-row-main{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer}
+.task-chk{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all 0.15s;cursor:pointer}
+.task-chk:hover{border-color:var(--done-c)}
+.task-chk.checked{background:var(--done-c);border-color:var(--done-c)}
+.task-chk svg{width:9px;height:9px;fill:white;display:none}
+.task-chk.checked svg{display:block}
+.task-body{flex:1;min-width:0}
+.task-title{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color 0.15s}
+.task-row.done .task-title{text-decoration:line-through;color:var(--text3)}
+.task-meta{font-size:11px;color:var(--text3);margin-top:2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.task-meta-badge{display:inline-flex;align-items:center;gap:3px}
+.task-meta-badge.overdue{color:var(--danger)}
+.task-row-actions{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.status-sel{padding:3px 8px;border-radius:12px;font-size:11px;font-weight:500;border:none;cursor:pointer;font-family:var(--font);-webkit-appearance:none;appearance:none}
+.status-todo{background:var(--todo-bg);color:var(--todo-c)}
+.status-prog{background:var(--prog-bg);color:var(--prog-c)}
+.status-done{background:var(--done-bg);color:var(--done-c)}
+.task-del-btn{opacity:0;width:24px;height:24px;border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all 0.12s;flex-shrink:0}
+.task-row:hover .task-del-btn{opacity:1}
+.task-del-btn:hover{background:var(--danger-bg);color:var(--danger)}
+.task-del-btn svg{width:12px;height:12px;fill:currentColor}
+.expand-icon{width:14px;height:14px;fill:var(--text3);transition:transform 0.2s;flex-shrink:0}
+.expand-icon.open{transform:rotate(90deg)}
+
+/* ── TASK DETAIL PANEL ── */
+.task-panel{border-top:1px solid var(--border);background:var(--bg3);padding:14px}
+.panel-section{margin-bottom:14px}
+.panel-section:last-child{margin-bottom:0}
+.panel-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+.notes-log{display:flex;flex-direction:column;gap:6px;max-height:160px;overflow-y:auto;margin-bottom:8px}
+.note-entry{background:var(--surface);border-radius:var(--r-sm);padding:9px 11px}
+.note-ts{font-size:11px;color:var(--text3);margin-bottom:3px}
+.note-text{font-size:13px;color:var(--text2);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.note-add{display:flex;gap:8px}
+.note-textarea{flex:1;padding:8px 11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);font-size:13px;color:var(--text);resize:none;min-height:56px;transition:border-color 0.15s}
+.note-textarea:focus{border-color:var(--accent)}
+.note-textarea::placeholder{color:var(--text3)}
+
+/* Due date row */
+.due-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.due-toggle{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2);cursor:pointer}
+.due-toggle input[type=checkbox]{width:14px;height:14px;accent-color:var(--accent)}
+.due-inputs{display:flex;gap:8px;align-items:center}
+.due-input{padding:5px 9px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);font-size:12px;color:var(--text);colorscheme:dark}
+[data-theme="light"] .due-input{colorscheme:light}
+.due-input:focus{border-color:var(--accent)}
+
+/* Assign row */
+.assign-row{display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.assign-label-text{font-size:13px;color:var(--text2);padding-top:3px;white-space:nowrap}
+.assignee-chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.assignee-chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent);padding:3px 8px;border-radius:12px;font-size:12px}
+.assignee-chip button{background:none;color:var(--accent);font-size:13px;line-height:1;padding:0 1px;cursor:pointer}
+.assign-input-wrap{position:relative}
+.assign-select-dd{padding:5px 10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--text2);font-family:var(--font);cursor:pointer;max-width:220px}
+.assign-select-dd:focus{border-color:var(--accent);color:var(--text)}
+
+/* Panel action buttons */
+.panel-actions{display:flex;gap:6px;flex-wrap:wrap}
+
+/* ══════════════════════════════════════════
+   MEMBERS VIEW
+══════════════════════════════════════════ */
+.member-list{display:flex;flex-direction:column;gap:8px}
+.member-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px}
+.member-av{width:34px;height:34px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white}
+.member-info{flex:1;min-width:0}
+.member-name{font-size:14px;font-weight:500}
+.member-email{font-size:12px;color:var(--text3)}
+.member-actions{display:flex;gap:6px;align-items:center}
+.role-badge{font-size:11px;font-weight:500;padding:2px 8px;border-radius:10px}
+.role-owner{background:var(--warn-bg);color:var(--warn)}
+.role-admin{background:var(--accent-bg);color:var(--accent)}
+.role-member{background:var(--bg3);color:var(--text3)}
+.role-sel{padding:4px 8px;border-radius:12px;font-size:11px;font-weight:500;border:none;cursor:pointer;background:var(--accent-bg);color:var(--accent);font-family:var(--font)}
+
+/* ══════════════════════════════════════════
+   ORG CARDS
+══════════════════════════════════════════ */
+.org-list{display:flex;flex-direction:column;gap:10px}
+.org-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;gap:14px}
+.org-card:hover{border-color:var(--border2);box-shadow:var(--shadow)}
+.org-icon{width:44px;height:44px;border-radius:12px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:700}
+.org-info{flex:1}
+.org-name{font-size:15px;font-weight:600;margin-bottom:3px}
+.org-meta{font-size:12px;color:var(--text2)}
+
+/* ══════════════════════════════════════════
+   ASSIGNED TO ME
+══════════════════════════════════════════ */
+.atm-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;margin-bottom:10px;transition:border-color 0.15s}
+.atm-card:hover{border-color:var(--border2)}
+.atm-header{display:flex;align-items:center;gap:12px;padding:14px 18px;cursor:pointer}
+.atm-header:hover{background:var(--bg3)}
+.atm-bar{width:4px;border-radius:2px;align-self:stretch;flex-shrink:0}
+.atm-info{flex:1;min-width:0}
+.atm-proj-name{font-size:14px;font-weight:600;margin-bottom:2px}
+.atm-source{font-size:12px;color:var(--text3)}
+.atm-stats{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.atm-mini-bar{width:70px;height:4px;background:var(--bg3);border-radius:2px;overflow:hidden}
+.atm-mini-fill{height:100%;border-radius:2px;transition:width 0.3s}
+.atm-pct{font-size:12px;font-family:var(--mono);color:var(--text3);min-width:30px;text-align:right}
+.atm-chevron{width:14px;height:14px;fill:var(--text3);transition:transform 0.2s;flex-shrink:0}
+.atm-chevron.open{transform:rotate(90deg)}
+.atm-tasks{border-top:1px solid var(--border);padding:8px 14px;display:flex;flex-direction:column;gap:5px}
+.atm-task{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);background:var(--bg3)}
+.atm-task-title{flex:1;font-size:13px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.atm-task-due{font-size:11px;color:var(--text3);white-space:nowrap}
+.atm-task-due.overdue{color:var(--danger)}
+
+/* ══════════════════════════════════════════
+   SETTINGS PAGE
+══════════════════════════════════════════ */
+.settings-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.settings-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px}
+.settings-card h3{font-size:14px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.settings-card h3 svg{width:15px;height:15px;fill:var(--accent)}
+.theme-options{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.theme-option{border:2px solid var(--border);border-radius:var(--r);padding:10px;cursor:pointer;transition:all 0.15s;text-align:center}
+.theme-option:hover{border-color:var(--border2)}
+.theme-option.active{border-color:var(--accent)}
+.theme-preview{height:36px;border-radius:6px;margin-bottom:6px}
+.theme-name{font-size:12px;font-weight:500;color:var(--text2)}
+.theme-option.active .theme-name{color:var(--accent)}
+.alert-hierarchy{display:flex;flex-direction:column;gap:6px}
+.alert-level{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--r-sm);font-size:13px}
+.alert-level-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.alert-level-icon svg{width:14px;height:14px;fill:white}
+.alert-level-info{flex:1}
+.alert-level-name{font-weight:500;margin-bottom:1px}
+.alert-level-desc{font-size:11px;color:var(--text3)}
+.alert-arrow{color:var(--text3);font-size:11px;text-align:center;padding:2px 0}
+
+.people-list{display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto}
+.people-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:var(--r-sm)}
+.people-name{flex:1;font-size:13px}
+.people-count{font-size:11px;color:var(--text3);font-family:var(--mono)}
+.people-del{opacity:0;width:22px;height:22px;border-radius:5px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:all 0.12s}
+.people-item:hover .people-del{opacity:1}
+.people-del:hover{background:var(--danger-bg);color:var(--danger)}
+.people-del svg{width:11px;height:11px;fill:currentColor}
+
+.alert-defaults{display:flex;flex-direction:column;gap:8px}
+.alert-row{display:flex;align-items:center;gap:10px;padding:8px;background:var(--bg3);border-radius:var(--r-sm)}
+.alert-row label{font-size:12px;color:var(--text2);display:flex;align-items:center;gap:6px;cursor:pointer;min-width:160px}
+.alert-row label input[type=checkbox]{accent-color:var(--accent)}
+.alert-row select{padding:4px 8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);font-size:12px;color:var(--text);font-family:var(--font)}
+
+/* ══════════════════════════════════════════
+   MODALS
+══════════════════════════════════════════ */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(3px)}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:26px;width:460px;max-width:96vw;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);animation:modal-in 0.18s ease}
+.modal-wide{width:560px}
+@keyframes modal-in{from{opacity:0;transform:scale(0.96) translateY(8px)}to{opacity:1;transform:none}}
+.modal h3{font-size:17px;font-weight:700;margin-bottom:18px}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
+.modal-info{background:var(--bg3);border-radius:var(--r-sm);padding:10px 13px;font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6;border:1px solid var(--border)}
+.modal-info strong{color:var(--text)}
+
+/* ══════════════════════════════════════════
+   TOAST
+══════════════════════════════════════════ */
+.toast{position:fixed;bottom:20px;right:20px;background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:10px 16px;border-radius:var(--r);font-size:13px;z-index:300;animation:toast-in 0.25s ease;box-shadow:var(--shadow);display:flex;align-items:center;gap:8px;max-width:320px}
+.toast.success{border-color:rgba(16,185,129,0.4)}
+.toast.error{border-color:rgba(239,68,68,0.4)}
+@keyframes toast-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* Loading */
+.loading{display:flex;align-items:center;justify-content:center;gap:10px;padding:50px;color:var(--text3);font-size:13px}
+.spin{width:18px;height:18px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Lock badge */
+.lock-badge{display:inline-flex;align-items:center;gap:3px;font-size:11px;padding:2px 7px;border-radius:10px;background:var(--danger-bg);color:var(--danger);margin-left:6px}
+
+/* Color palette for projects */
+.c1{background:#38bdf8}.c2{background:#10b981}.c3{background:#f59e0b}
+.c4{background:#ef4444}.c5{background:#8b5cf6}.c6{background:#ec4899}
+</style>
+</head>
+<body data-theme="dark">
+
+<!-- ══ AUTH ══ -->
+<div id="screen-auth" class="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></div>
+    <h1>Flow<span>Board</span></h1>
+    <p>Project management powered by your Google Drive.<br>Free forever. Your data stays yours.</p>
+    <button class="btn-google" onclick="signIn()">
+      <img src="https://www.google.com/favicon.ico" alt="">
+      Continue with Google
+    </button>
+    <div class="auth-note">All data stored in your Google Drive.<br>We never see or store your information.</div>
+  </div>
+</div>
+
+<!-- ══ SETUP ══ -->
+<div id="screen-setup" class="auth-screen hidden">
+  <div class="setup-card">
+    <h2>Connect to Google</h2>
+    <p>FlowBoard needs a Google OAuth Client ID. This is free and takes about 10 minutes to set up once.</p>
+    <div class="setup-steps">
+      <strong>How to get your Client ID:</strong><br>
+      1. Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → create a project<br>
+      2. Enable <strong>Google Drive API</strong> under APIs &amp; Services<br>
+      3. Go to <strong>Google Auth Platform → Get started</strong> (choose External)<br>
+      4. Go to <strong>Clients → Create Client</strong> → Web application<br>
+      5. Add your site URL under Authorized JavaScript Origins<br>
+      6. Copy your Client ID and paste below
+    </div>
+    <div class="form-field">
+      <label>OAuth Client ID</label>
+      <input type="text" id="setup-client-id" placeholder="123456789-abc.apps.googleusercontent.com">
+    </div>
+    <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="saveClientId()">Save &amp; Connect</button>
+  </div>
+</div>
+
+<!-- ══ MAIN APP ══ -->
+<div id="app" class="hidden">
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-head">
+      <div class="sb-logo"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></div>
+      <span class="sb-appname">FlowBoard</span>
+    </div>
+
+    <!-- Workspace switcher -->
+    <div style="padding:8px 8px 4px">
+      <div class="ws-switcher">
+        <button class="ws-btn active" id="ws-personal" onclick="switchWorkspace('personal')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+          Personal
+        </button>
+        <button class="ws-btn" id="ws-org" onclick="switchWorkspace('org')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7V3H2v18h20V7H12z"/></svg>
+          Org
+        </button>
+      </div>
+    </div>
+
+    <!-- Personal nav -->
+    <div id="nav-personal">
+      <div class="sb-section">
+        <div class="sb-item active" id="sbi-personal-home" onclick="showView('personal-home')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          My Projects
+        </div>
+        <div class="sb-item" id="sbi-assigned" onclick="showView('assigned')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg>
+          Assigned to Me
+        </div>
+        <div class="sb-item" id="sbi-settings" onclick="showView('settings')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+          Settings
+        </div>
+      </div>
+      <div class="sb-section" style="flex:1">
+        <div class="sb-label">Projects</div>
+        <div id="sb-personal-projects"></div>
+      </div>
+    </div>
+
+    <!-- Org nav -->
+    <div id="nav-org" class="hidden">
+      <div class="sb-section">
+        <div class="sb-item active" id="sbi-org-home" onclick="showView('org-home')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+          Organizations
+        </div>
+      </div>
+      <div id="sb-org-detail" class="hidden">
+        <div class="sb-section">
+          <div class="sb-item" id="sbi-org-projects" onclick="showView('org-projects')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg>
+            Projects
+          </div>
+          <div class="sb-item" id="sbi-org-members" onclick="showView('org-members')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg>
+            Members
+          </div>
+          <div class="sb-item" id="sbi-org-settings" onclick="showView('org-settings')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            Org Settings
+          </div>
+        </div>
+        <div class="sb-section" style="flex:1">
+          <div class="sb-label">Org Projects</div>
+          <div id="sb-org-projects-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sb-bottom">
+      <div class="user-chip">
+        <div class="user-av" id="user-av">?</div>
+        <div style="min-width:0">
+          <div class="user-name" id="user-name">Loading...</div>
+          <div class="user-email" id="user-email"></div>
+        </div>
+      </div>
+      <div class="sb-actions">
+        <button class="sb-action-btn" onclick="showView('settings')">⚙ Settings</button>
+        <button class="sb-action-btn" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- Personal Home -->
+    <div id="view-personal-home" class="hidden">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">My Projects</div><div class="topbar-sub" id="ph-sub"></div></div>
+        <div class="topbar-actions">
+          <button class="btn btn-primary" onclick="openModal('modal-new-personal-project')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>New Project
+          </button>
+        </div>
+      </div>
+      <div class="content">
+        <div class="sort-bar">
+          <span class="sort-bar-label">Sort:</span>
+          <select class="sort-select" id="personal-proj-sort" onchange="renderPersonalHome()">
+            <option value="modified">Last Modified</option>
+            <option value="created">Date Created</option>
+            <option value="alpha">Alphabetical</option>
+            <option value="progress">Progress</option>
+          </select>
+        </div>
+        <div id="personal-proj-grid" class="proj-grid"></div>
+      </div>
+    </div>
+
+    <!-- Assigned to Me -->
+    <div id="view-assigned" class="hidden">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">Assigned to Me</div><div class="topbar-sub" id="atm-sub"></div></div>
+        <div class="topbar-actions"><button class="btn btn-ghost btn-sm" onclick="loadAssignedToMe()">↻ Refresh</button></div>
+      </div>
+      <div class="content" id="atm-content"></div>
+    </div>
+
+    <!-- Settings -->
+    <div id="view-settings" class="hidden">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">Settings</div><div class="topbar-sub">Appearance, alerts, and people</div></div>
+      </div>
+      <div class="content">
+        <div class="settings-grid">
+          <!-- Theme -->
+          <div class="settings-card">
+            <h3><svg viewBox="0 0 24 24"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg> Theme</h3>
+            <div class="theme-options">
+              <div class="theme-option active" id="theme-dark" onclick="setTheme('dark')">
+                <div class="theme-preview" style="background:linear-gradient(135deg,#0f172a,#1e293b)"></div>
+                <div class="theme-name">Dark</div>
+              </div>
+              <div class="theme-option" id="theme-light" onclick="setTheme('light')">
+                <div class="theme-preview" style="background:linear-gradient(135deg,#f8fafc,#e2e8f0)"></div>
+                <div class="theme-name">Light</div>
+              </div>
+              <div class="theme-option" id="theme-slate" onclick="setTheme('slate')">
+                <div class="theme-preview" style="background:linear-gradient(135deg,#1a1f2e,#7c3aed)"></div>
+                <div class="theme-name">Slate</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Alert Hierarchy -->
+          <div class="settings-card">
+            <h3><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg> Alert Priority</h3>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.6">Lower levels override higher. Task-level alerts have highest priority.</p>
+            <div class="alert-hierarchy">
+              <div class="alert-level">
+                <div class="alert-level-icon" style="background:#64748b"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg></div>
+                <div class="alert-level-info"><div class="alert-level-name">Global Defaults</div><div class="alert-level-desc">Set below — applies everywhere</div></div>
+                <span style="font-size:11px;color:var(--text3)">Lowest</span>
+              </div>
+              <div class="alert-arrow">↓ overridden by</div>
+              <div class="alert-level">
+                <div class="alert-level-icon" style="background:#0284c7"><svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg></div>
+                <div class="alert-level-info"><div class="alert-level-name">Personal / Org</div><div class="alert-level-desc">Workspace-level defaults</div></div>
+              </div>
+              <div class="alert-arrow">↓ overridden by</div>
+              <div class="alert-level">
+                <div class="alert-level-icon" style="background:#7c3aed"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></div>
+                <div class="alert-level-info"><div class="alert-level-name">Project</div><div class="alert-level-desc">Per-project overrides</div></div>
+              </div>
+              <div class="alert-arrow">↓ overridden by</div>
+              <div class="alert-level">
+                <div class="alert-level-icon" style="background:#10b981"><svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div>
+                <div class="alert-level-info"><div class="alert-level-name">Task</div><div class="alert-level-desc">Highest priority</div></div>
+                <span style="font-size:11px;color:var(--done-c)">Highest</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Global Alert Defaults -->
+          <div class="settings-card">
+            <h3><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg> Global Alert Defaults</h3>
+            <div class="alert-defaults">
+              <div class="alert-row">
+                <label><input type="checkbox" id="al-due" checked> Due date reminder</label>
+                <select id="al-due-mins"><option value="0">At event</option><option value="30">30 min before</option><option value="60" selected>1 hr before</option><option value="1440">1 day before</option><option value="2880">2 days before</option></select>
+              </div>
+              <div class="alert-row">
+                <label><input type="checkbox" id="al-daily"> Daily reminder</label>
+                <select id="al-daily-time"><option value="08:00">8:00 AM</option><option value="09:00" selected>9:00 AM</option><option value="12:00">12:00 PM</option><option value="17:00">5:00 PM</option></select>
+              </div>
+              <div class="alert-row">
+                <label><input type="checkbox" id="al-pastdue" checked> Past due daily</label>
+                <select id="al-pastdue-time"><option value="08:00">8:00 AM</option><option value="09:00" selected>9:00 AM</option><option value="12:00">12:00 PM</option></select>
+              </div>
+              <div class="alert-row">
+                <label><input type="checkbox" id="al-email"> Email reminder</label>
+                <select id="al-email-mins"><option value="1440" selected>1 day before</option><option value="2880">2 days before</option></select>
+              </div>
+            </div>
+            <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="saveGlobalAlerts()">Save Defaults</button>
+          </div>
+
+          <!-- People List -->
+          <div class="settings-card">
+            <h3><svg viewBox="0 0 24 24"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg> People</h3>
+            <p style="font-size:12px;color:var(--text3);margin-bottom:10px">Manage your autocomplete list for task assignments.</p>
+            <div id="settings-people-list" class="people-list"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Org Home -->
+    <div id="view-org-home" class="hidden">
+      <div class="topbar">
+        <div class="topbar-left"><div class="topbar-title">Organizations</div><div class="topbar-sub">Workspaces you belong to</div></div>
+        <div class="topbar-actions">
+          <button class="btn btn-ghost btn-sm" onclick="openModal('modal-join-org')">Join Org</button>
+          <button class="btn btn-primary" onclick="openModal('modal-create-org')">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Create Org
+          </button>
+        </div>
+      </div>
+      <div class="content"><div id="org-list" class="org-list"></div></div>
+    </div>
+
+    <!-- Org Projects -->
+    <div id="view-org-projects" class="hidden">
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="breadcrumb"><span onclick="showView('org-home')">Organizations</span><span class="breadcrumb-sep">›</span><span id="op-breadcrumb"></span></div>
+          <div class="topbar-title" id="op-title"></div>
+          <div class="topbar-sub" id="op-sub"></div>
+        </div>
+        <div class="topbar-actions" id="op-actions"></div>
+      </div>
+      <div class="content">
+        <div class="sort-bar">
+          <span class="sort-bar-label">Sort:</span>
+          <select class="sort-select" id="org-proj-sort" onchange="renderOrgProjects()">
+            <option value="modified">Last Modified</option>
+            <option value="created">Date Created</option>
+            <option value="alpha">Alphabetical</option>
+            <option value="progress">Progress</option>
+          </select>
+        </div>
+        <div id="org-proj-grid" class="proj-grid"></div>
+      </div>
+    </div>
+
+    <!-- Org Members -->
+    <div id="view-org-members" class="hidden">
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="breadcrumb"><span onclick="showView('org-home')">Organizations</span><span class="breadcrumb-sep">›</span><span id="om-breadcrumb"></span></div>
+          <div class="topbar-title">Members</div>
+          <div class="topbar-sub" id="om-sub"></div>
+        </div>
+        <div class="topbar-actions" id="om-actions"></div>
+      </div>
+      <div class="content"><div id="members-list" class="member-list"></div></div>
+    </div>
+
+    <!-- Org Settings -->
+    <div id="view-org-settings" class="hidden">
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="breadcrumb"><span onclick="showView('org-home')">Organizations</span><span class="breadcrumb-sep">›</span><span id="os-breadcrumb"></span></div>
+          <div class="topbar-title">Org Settings</div>
+        </div>
+      </div>
+      <div class="content">
+        <div class="settings-grid">
+          <div class="settings-card">
+            <h3><svg viewBox="0 0 24 24"><path d="M12 7V3H2v18h20V7H12z"/></svg> Organization Details</h3>
+            <div class="form-field"><label>Name</label><input type="text" id="org-edit-name"></div>
+            <div class="form-field"><label>Description</label><textarea id="org-edit-desc" rows="3"></textarea></div>
+            <button class="btn btn-primary btn-sm" onclick="saveOrgSettings()">Save Changes</button>
+          </div>
+          <div class="settings-card">
+            <h3><svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg> Org Alert Defaults</h3>
+            <div class="alert-defaults">
+              <div class="alert-row"><label><input type="checkbox" id="oal-due" checked> Due date reminder</label><select id="oal-due-mins"><option value="60" selected>1 hr before</option><option value="1440">1 day before</option></select></div>
+              <div class="alert-row"><label><input type="checkbox" id="oal-pastdue" checked> Past due daily</label><select id="oal-pastdue-time"><option value="09:00" selected>9:00 AM</option></select></div>
+            </div>
+            <button class="btn btn-primary btn-sm" style="margin-top:12px" onclick="saveOrgAlerts()">Save</button>
+          </div>
+          <div class="settings-card" id="org-danger-card">
+            <h3><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg> Danger Zone</h3>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div id="org-transfer-ownership-wrap"></div>
+              <button class="btn btn-danger" onclick="leaveOrg()">Leave Organization</button>
+              <div id="org-delete-wrap"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Project View -->
+    <div id="view-project" class="hidden">
+      <div class="topbar">
+        <div class="topbar-left">
+          <div class="breadcrumb" id="proj-breadcrumb"></div>
+          <div class="topbar-title" id="proj-title"></div>
+          <div class="topbar-sub" id="proj-desc"></div>
+        </div>
+        <div class="topbar-actions" id="proj-actions"></div>
+      </div>
+      <div class="content">
+        <div class="stats-row">
+          <div class="stat-card todo"><div class="stat-label">To Do</div><div class="stat-val" id="stat-todo">0</div></div>
+          <div class="stat-card prog"><div class="stat-label">In Progress</div><div class="stat-val" id="stat-prog">0</div></div>
+          <div class="stat-card done"><div class="stat-label">Complete</div><div class="stat-val" id="stat-done">0</div></div>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-info"><span id="prog-label">0 of 0 complete</span><span id="prog-pct">0%</span></div>
+          <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+        </div>
+        <div class="task-toolbar">
+          <div class="task-add-row" id="task-add-row">
+            <input class="task-input" id="task-input" placeholder="Add a task and press Enter..." onkeydown="if(event.key==='Enter')addTask()">
+            <button class="btn btn-primary" onclick="addTask()">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>Add
+            </button>
+          </div>
+          <div class="filter-sort-row">
+            <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+            <button class="filter-btn" onclick="setFilter('todo',this)">To Do</button>
+            <button class="filter-btn" onclick="setFilter('progress',this)">In Progress</button>
+            <button class="filter-btn" onclick="setFilter('done',this)">Complete</button>
+            <div class="filter-sep"></div>
+            <span style="font-size:12px;color:var(--text3)">Sort:</span>
+            <select class="sort-select" id="task-sort" onchange="renderTaskList()">
+              <option value="created">Date Created</option>
+              <option value="alpha">Alphabetical</option>
+              <option value="due">Due Date</option>
+              <option value="status">Status</option>
+              <option value="assignee">Assignee</option>
+            </select>
+          </div>
+        </div>
+        <div id="task-list" class="task-list"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ MODALS ══ -->
+
+<!-- New Personal Project -->
+<div id="modal-new-personal-project" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 id="npp-title">New Project</h3>
+    <div class="form-field"><label>Project Name *</label><input type="text" id="npp-name" placeholder="e.g. Website Redesign"></div>
+    <div class="form-field"><label>Description</label><textarea id="npp-desc" rows="3" placeholder="What is this project about?"></textarea></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-personal-project')">Cancel</button>
+      <button class="btn btn-primary" id="npp-btn" onclick="savePersonalProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- New Org Project -->
+<div id="modal-new-org-project" class="modal-overlay hidden">
+  <div class="modal">
+    <h3 id="nop-title">New Org Project</h3>
+    <div class="form-field"><label>Project Name *</label><input type="text" id="nop-name" placeholder="e.g. Q4 Campaign"></div>
+    <div class="form-field"><label>Description</label><textarea id="nop-desc" rows="3"></textarea></div>
+    <div class="form-field"><label>Visibility</label>
+      <select id="nop-visibility">
+        <option value="public">Visible to all members</option>
+        <option value="hidden">Hidden — collaborators only</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-org-project')">Cancel</button>
+      <button class="btn btn-primary" id="nop-btn" onclick="saveOrgProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Org -->
+<div id="modal-create-org" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Create Organization</h3>
+    <div class="modal-info"><strong>Tip:</strong> Use a dedicated Google account (e.g. acmecorp.flowboard@gmail.com) so the org isn't tied to one person.</div>
+    <div class="form-field"><label>Organization Name *</label><input type="text" id="co-name" placeholder="e.g. Acme Corp"></div>
+    <div class="form-field"><label>Description</label><input type="text" id="co-desc" placeholder="What does your org do?"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-create-org')">Cancel</button>
+      <button class="btn btn-primary" onclick="createOrg()">Create Organization</button>
+    </div>
+  </div>
+</div>
+
+<!-- Join Org info -->
+<div id="modal-join-org" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Join an Organization</h3>
+    <div class="modal-info">Ask your org admin to invite you using your Google email. Once added, the org will appear here automatically when you next sign in.</div>
+    <div class="form-field"><label>Your Email (share with admin)</label><input type="text" id="join-email-show" readonly style="opacity:0.7"></div>
+    <div class="modal-actions"><button class="btn btn-ghost" onclick="closeModal('modal-join-org')">Close</button></div>
+  </div>
+</div>
+
+<!-- Invite Member -->
+<div id="modal-invite-member" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Invite Member</h3>
+    <div class="form-field"><label>Google Email *</label><input type="email" id="invite-email" placeholder="colleague@gmail.com"></div>
+    <div class="form-field"><label>Role</label>
+      <select id="invite-role">
+        <option value="member">Member — can create projects, manage their own</option>
+        <option value="admin">Admin — full org control</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-invite-member')">Cancel</button>
+      <button class="btn btn-primary" onclick="inviteMember()">Send Invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- Manage Collaborators (Org Project) -->
+<div id="modal-collabs" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Manage Collaborators</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Select who can see and work on this project.</p>
+    <div id="collab-list" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-collabs')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCollabs()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Share Personal Project -->
+<div id="modal-share" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Share Project</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Invite someone — they'll get a link. When they click it and sign in, the project appears in their FlowBoard.</p>
+    <div class="form-field"><label>Email Address</label><input type="email" id="share-email" placeholder="friend@gmail.com"></div>
+    <div id="share-current" style="margin-bottom:12px"></div>
+    <div class="modal-info" style="font-size:12px">This opens Gmail with a pre-written invite. Just hit Send.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-share')">Close</button>
+      <button class="btn btn-primary" onclick="sendShareInvite()">Open Gmail Invite</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer to Org -->
+<div id="modal-transfer" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Transfer to Organization</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Move this project to an org. It will be removed from your personal workspace.</p>
+    <div class="form-field"><label>Organization</label><select id="transfer-org"></select></div>
+    <div class="form-field"><label>Visibility in Org</label>
+      <select id="transfer-vis">
+        <option value="public">Visible to all members</option>
+        <option value="hidden">Hidden — collaborators only</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-transfer')">Cancel</button>
+      <button class="btn btn-primary" onclick="transferToOrg()">Transfer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer Org Ownership -->
+<div id="modal-transfer-ownership" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <h3>Transfer Org Ownership</h3>
+    <div class="modal-info">
+      <strong>How this works:</strong><br><br>
+      FlowBoard stores org data in the Google Drive of whoever originally created the org. Transferring ownership has two parts:<br><br>
+      <strong>Step 1 — Role transfer (automatic):</strong> The new owner gets the Owner role. You become an Admin and stay in the org.<br><br>
+      <strong>Step 2 — Drive data transfer (manual, recommended):</strong><br>
+      We'll grant the new owner full access to all org files. To fully move the data to their Drive:<br>
+      1. Ask the new owner to sign into <a href="https://drive.google.com" target="_blank">Google Drive</a> and find the <strong>FlowBoard_Orgs</strong> folder shared with them<br>
+      2. They right-click it → <strong>Make a copy</strong> (or Add shortcut to Drive)<br>
+      3. Verify FlowBoard still works correctly for all members<br>
+      4. You can then remove the original folder from your Drive if desired<br><br>
+      <strong style="color:var(--warn)">⚠ Do not delete the original until the new owner confirms everything is working.</strong>
+    </div>
+    <div class="form-field">
+      <label>New Owner *</label>
+      <select id="new-owner-sel"></select>
+    </div>
+    <div class="form-field" style="display:flex;align-items:flex-start;gap:8px;margin-top:4px">
+      <input type="checkbox" id="transfer-drive-data" style="width:15px;height:15px;accent-color:var(--accent);margin-top:2px;flex-shrink:0">
+      <label for="transfer-drive-data" style="font-size:13px;color:var(--text2);cursor:pointer;line-height:1.5">Grant new owner full write access to all org files in Google Drive <span style="color:var(--text3)">(required for them to manage org data)</span></label>
+    </div>
+    <div class="form-field">
+      <label>Type CONFIRM to proceed *</label>
+      <input type="text" id="transfer-ownership-confirm" placeholder="CONFIRM">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-transfer-ownership')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeTransferOwnership()">Transfer Ownership</button>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Org confirm -->
+<div id="modal-delete-org" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Delete Organization</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">This will permanently delete <strong id="del-org-name"></strong> and all its projects. Type <strong>DELETE</strong> to confirm.</p>
+    <div class="form-field"><input type="text" id="del-org-confirm" placeholder="Type DELETE"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-delete-org')">Cancel</button>
+      <button class="btn btn-danger" onclick="deleteOrg()">Delete Forever</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer Org Ownership -->
+<div id="modal-transfer-owner" class="modal-overlay hidden">
+  <div class="modal">
+    <h3>Transfer Ownership Before Leaving</h3>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">You are the only admin. Promote someone before leaving.</p>
+    <div class="form-field"><label>Promote to Admin</label><select id="transfer-owner-sel"></select></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-transfer-owner')">Cancel</button>
+      <button class="btn btn-primary" onclick="promoteAndLeave()">Promote &amp; Leave</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// CONFIG — REPLACE CLIENT ID BEFORE DEPLOYING
+// ═══════════════════════════════════════════════════
+const HARDCODED_CLIENT_ID = '';
+const SCOPES = [
+  'https://www.googleapis.com/auth/drive.file',
+  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/userinfo.email',
+  'https://www.googleapis.com/auth/userinfo.profile'
+].join(' ');
+const FOLDER_NAME = 'FlowBoard_Data';
+const ORG_FOLDER_NAME = 'FlowBoard_Orgs';
+const COLORS = ['c1','c2','c3','c4','c5','c6'];
+const COLOR_HEX = ['#38bdf8','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899'];
+
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let CLIENT_ID = HARDCODED_CLIENT_ID || localStorage.getItem('fb_client_id') || '';
+let accessToken = null;
+let currentUser = null;
+let tokenClient = null;
+
+// Personal
+let personalFolderId = null;
+let personalProjects = [];
+let currentPersonalProject = null;
+
+// Org
+let orgs = [];
+let currentOrg = null;
+let currentOrgRole = 'member';
+let currentOrgProject = null;
+
+// View
+let currentWorkspace = 'personal';
+let currentView = 'personal-home';
+let currentProjectType = null; // 'personal' | 'org'
+let currentFilter = 'all';
+let openTaskPanelId = null;
+
+// Settings
+let settings = JSON.parse(localStorage.getItem('fb_settings') || 'null') || {
+  theme: 'dark',
+  alerts: { due: true, dueMins: 60, daily: false, dailyTime: '09:00', pastDue: true, pastDueTime: '09:00', email: false, emailMins: 1440 }
+};
+
+// People list (for task assignment autocomplete)
+let peopleList = JSON.parse(localStorage.getItem('fb_people') || '[]');
+
+// ATM cache
+let atmGroups = [];
+let atmExpanded = {};
+
+// Project being edited
+let editingProjectId = null;
+let editingOrgProjectId = null;
+
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
+window.onload = () => {
+  applyTheme(settings.theme);
+  checkInviteToken();
+  if (!CLIENT_ID) { showScreen('setup'); }
+  else { showScreen('auth'); initGAPI(); }
+};
+
+function initGAPI() {
+  if (typeof gapi === 'undefined') { showScreen('auth'); return; }
+  gapi.load('client', async () => {
+    try {
+      await gapi.client.init({});
+      await gapi.client.load('https://www.googleapis.com/discovery/v1/apis/drive/v3/rest');
+      tokenClient = google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: handleTokenResponse
+      });
+      showScreen('auth');
+    } catch(e) { console.error('GAPI init error:', e); showScreen('auth'); }
+  });
+}
+
+function handleTokenResponse(resp) {
+  if (resp.error) { toast('Sign-in failed: ' + resp.error, 'error'); return; }
+  accessToken = resp.access_token;
+  gapi.client.setToken({ access_token: accessToken });
+  fetchUserInfo();
+}
+
+async function fetchUserInfo() {
+  try {
+    const res = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: { 'Authorization': 'Bearer ' + accessToken }
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const info = await res.json();
+    if (!info.email) throw new Error('No email in response');
+    finishSignIn(info.name || info.email, info.email);
+  } catch(e) {
+    console.error('fetchUserInfo failed:', e);
+    // Fallback: show app anyway if we have a token
+    if (accessToken) finishSignIn('User', 'unknown@gmail.com');
+    else toast('Could not get user info. Try again.', 'error');
+  }
+}
+
+function finishSignIn(name, email) {
+  currentUser = { name, email, initials: name.split(' ').map(n=>n[0]).join('').substring(0,2).toUpperCase() };
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('user-email').textContent = email;
+  document.getElementById('user-av').textContent = currentUser.initials;
+  document.getElementById('join-email-show').value = email;
+  showScreen('app');
+  ensurePersonalFolder();
+  loadOrgs();
+  addPersonToList(name, email);
+}
+
+function signIn() {
+  if (!tokenClient) { toast('Still loading, please wait...', 'error'); return; }
+  tokenClient.requestAccessToken({ prompt: 'select_account' });
+}
+
+function signOut() {
+  if (accessToken) google.accounts.oauth2.revoke(accessToken, ()=>{});
+  accessToken = null; currentUser = null; currentOrg = null; currentPersonalProject = null;
+  personalProjects = []; orgs = [];
+  showScreen('auth');
+}
+
+function saveClientId() {
+  const id = document.getElementById('setup-client-id').value.trim();
+  if (!id) { toast('Enter a Client ID', 'error'); return; }
+  CLIENT_ID = id;
+  localStorage.setItem('fb_client_id', id);
+  showScreen('auth');
+  initGAPI();
+}
+
+// ═══════════════════════════════════════════════════
+// SCREEN / VIEW MANAGEMENT
+// ═══════════════════════════════════════════════════
+function showScreen(s) {
+  document.getElementById('screen-auth').classList.toggle('hidden', s !== 'auth');
+  document.getElementById('screen-setup').classList.toggle('hidden', s !== 'setup');
+  document.getElementById('app').classList.toggle('hidden', s !== 'app');
+}
+
+const ALL_VIEWS = ['personal-home','assigned','settings','org-home','org-projects','org-members','org-settings','project'];
+
+function showView(v) {
+  ALL_VIEWS.forEach(id => {
+    const el = document.getElementById('view-' + id);
+    if (el) el.classList.toggle('hidden', id !== v);
+  });
+  currentView = v;
+  // Update sidebar active states
+  document.querySelectorAll('.sb-item').forEach(el => el.classList.remove('active'));
+  const map = {
+    'personal-home': 'sbi-personal-home', 'assigned': 'sbi-assigned', 'settings': 'sbi-settings',
+    'org-home': 'sbi-org-home', 'org-projects': 'sbi-org-projects',
+    'org-members': 'sbi-org-members', 'org-settings': 'sbi-org-settings'
+  };
+  if (map[v]) { const el = document.getElementById(map[v]); if(el) el.classList.add('active'); }
+}
+
+function switchWorkspace(ws) {
+  currentWorkspace = ws;
+  document.getElementById('nav-personal').classList.toggle('hidden', ws !== 'personal');
+  document.getElementById('nav-org').classList.toggle('hidden', ws !== 'org');
+  document.getElementById('ws-personal').classList.toggle('active', ws === 'personal');
+  document.getElementById('ws-org').classList.toggle('active', ws === 'org');
+  if (ws === 'personal') { renderPersonalHome(); showView('personal-home'); }
+  else { renderOrgHome(); showView('org-home'); }
+}
+
+// ═══════════════════════════════════════════════════
+// THEME & SETTINGS
+// ═══════════════════════════════════════════════════
+function applyTheme(t) {
+  settings.theme = t;
+  document.body.setAttribute('data-theme', t);
+  document.querySelectorAll('.theme-option').forEach(el => {
+    el.classList.toggle('active', el.id === 'theme-' + t);
+  });
+  localStorage.setItem('fb_settings', JSON.stringify(settings));
+}
+
+function setTheme(t) { applyTheme(t); }
+
+function saveGlobalAlerts() {
+  settings.alerts = {
+    due: document.getElementById('al-due').checked,
+    dueMins: parseInt(document.getElementById('al-due-mins').value),
+    daily: document.getElementById('al-daily').checked,
+    dailyTime: document.getElementById('al-daily-time').value,
+    pastDue: document.getElementById('al-pastdue').checked,
+    pastDueTime: document.getElementById('al-pastdue-time').value,
+    email: document.getElementById('al-email').checked,
+    emailMins: parseInt(document.getElementById('al-email-mins').value)
+  };
+  localStorage.setItem('fb_settings', JSON.stringify(settings));
+  toast('Alert defaults saved', 'success');
+}
+
+function loadAlertSettingsUI() {
+  const al = settings.alerts;
+  document.getElementById('al-due').checked = al.due;
+  document.getElementById('al-due-mins').value = al.dueMins;
+  document.getElementById('al-daily').checked = al.daily;
+  document.getElementById('al-daily-time').value = al.dailyTime;
+  document.getElementById('al-pastdue').checked = al.pastDue;
+  document.getElementById('al-pastdue-time').value = al.pastDueTime;
+  document.getElementById('al-email').checked = al.email;
+  document.getElementById('al-email-mins').value = al.emailMins;
+}
+
+// ═══════════════════════════════════════════════════
+// PEOPLE LIST
+// ═══════════════════════════════════════════════════
+function addPersonToList(name, email) {
+  const key = email || name;
+  if (!peopleList.find(p => p.key === key)) {
+    peopleList.push({ name, email: email || '', key });
+    savePeopleList();
+  }
+}
+
+function savePeopleList() {
+  peopleList.sort((a,b) => a.name.localeCompare(b.name));
+  localStorage.setItem('fb_people', JSON.stringify(peopleList));
+}
+
+function removePerson(key) {
+  peopleList = peopleList.filter(p => p.key !== key);
+  savePeopleList();
+  renderPeopleSettings();
+}
+
+function renderPeopleSettings() {
+  const el = document.getElementById('settings-people-list');
+  if (!el) return;
+  if (!peopleList.length) {
+    el.innerHTML = '<div style="font-size:13px;color:var(--text3);padding:8px 0">No people added yet. They appear here when you assign tasks.</div>';
+    return;
+  }
+  el.innerHTML = peopleList.map(p => `
+    <div class="people-item">
+      <span class="people-name">${esc(p.name)}${p.email ? ' <span style="color:var(--text3);font-size:11px">' + esc(p.email) + '</span>' : ''}</span>
+      <button class="people-del" onclick="removePerson('${esc(p.key)}')" title="Remove">
+        <svg viewBox="0 0 24 24"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+// ═══════════════════════════════════════════════════
+// DRIVE HELPERS
+// ═══════════════════════════════════════════════════
+async function driveList(q, fields='files(id,name,modifiedTime)') {
+  const r = await gapi.client.drive.files.list({ q, fields, orderBy: 'modifiedTime desc' });
+  return r.result.files || [];
+}
+
+async function driveRead(fileId) {
+  try {
+    const r = await gapi.client.drive.files.get({ fileId, alt: 'media' });
+    return typeof r.result === 'string' ? JSON.parse(r.result) : r.result;
+  } catch(e) { return null; }
+}
+
+async function driveWrite(data, fileId=null, parentId=null, filename=null) {
+  const content = JSON.stringify(data, null, 2);
+  if (fileId) {
+    await fetch('https://www.googleapis.com/upload/drive/v3/files/' + fileId + '?uploadType=media', {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: content
+    });
+    return fileId;
+  }
+  const meta = { name: filename || ('fb_' + Date.now() + '.json'), parents: [parentId] };
+  const form = new FormData();
+  form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+  form.append('file', new Blob([content], { type: 'application/json' }));
+  const r = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + accessToken },
+    body: form
+  });
+  return (await r.json()).id;
+}
+
+async function driveDelete(fileId) {
+  try { await gapi.client.drive.files.delete({ fileId }); } catch(e) {}
+}
+
+async function driveShare(fileId, email, role='reader') {
+  try {
+    await fetch('https://www.googleapis.com/drive/v3/files/' + fileId + '/permissions', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'user', role, emailAddress: email })
+    });
+  } catch(e) {}
+}
+
+async function ensureFolder(name, parentId=null) {
+  const q = parentId
+    ? `name='${name}' and mimeType='application/vnd.google-apps.folder' and '${parentId}' in parents and trashed=false`
+    : `name='${name}' and mimeType='application/vnd.google-apps.folder' and trashed=false`;
+  const files = await driveList(q, 'files(id,name)');
+  if (files.length) return files[0].id;
+  const r = await gapi.client.drive.files.create({
+    resource: { name, mimeType: 'application/vnd.google-apps.folder', ...(parentId ? { parents: [parentId] } : {}) },
+    fields: 'id'
+  });
+  return r.result.id;
+}
+
+// ═══════════════════════════════════════════════════
+// PERSONAL PROJECTS
+// ═══════════════════════════════════════════════════
+async function ensurePersonalFolder() {
+  personalFolderId = await ensureFolder(FOLDER_NAME);
+  await loadPersonalProjects();
+  checkPendingInvite();
+}
+
+async function loadPersonalProjects() {
+  const files = await driveList(`'${personalFolderId}' in parents and mimeType='application/json' and trashed=false`);
+  personalProjects = [];
+  for (const f of files) {
+    const d = await driveRead(f.id);
+    if (d && d.type === 'personal_project') personalProjects.push({ ...d, fileId: f.id });
+  }
+  renderPersonalSidebar();
+  if (currentView === 'personal-home') renderPersonalHome();
+}
+
+function renderPersonalSidebar() {
+  const el = document.getElementById('sb-personal-projects');
+  if (!el) return;
+  if (!personalProjects.length) { el.innerHTML = '<div style="padding:6px 10px;font-size:12px;color:var(--text3)">No projects yet</div>'; return; }
+  el.innerHTML = personalProjects.map(p => {
+    const done = (p.tasks||[]).filter(t=>t.status==='done').length;
+    const isActive = currentPersonalProject && currentPersonalProject.id === p.id;
+    return `<div class="sb-item ${isActive?'active':''}" onclick="openPersonalProject('${p.id}')">
+      <div class="sb-dot ${p.color}"></div>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(p.name)}</span>
+      <span class="sb-count">${done}/${(p.tasks||[]).length}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderPersonalHome() {
+  showView('personal-home');
+  const sort = document.getElementById('personal-proj-sort')?.value || 'modified';
+  const sorted = sortProjects([...personalProjects], sort);
+  const sub = document.getElementById('ph-sub');
+  if (sub) sub.textContent = sorted.length + ' project' + (sorted.length !== 1 ? 's' : '');
+  const grid = document.getElementById('personal-proj-grid');
+  if (!grid) return;
+  if (!sorted.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></div>
+      <h3>No projects yet</h3><p>Create your first project to get started.</p>
+      <button class="btn btn-primary" onclick="openModal('modal-new-personal-project')">Create Project</button>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = sorted.map(p => renderProjCard(p, 'personal')).join('');
+}
+
+function openPersonalProject(id) {
+  const p = personalProjects.find(x => x.id === id);
+  if (!p) return;
+  currentPersonalProject = p;
+  currentProjectType = 'personal';
+  openTaskPanelId = null;
+  renderPersonalSidebar();
+  renderProjectView();
+}
+
+function openNewPersonalProjectModal() {
+  editingProjectId = null;
+  document.getElementById('npp-title').textContent = 'New Project';
+  document.getElementById('npp-btn').textContent = 'Create Project';
+  document.getElementById('npp-name').value = '';
+  document.getElementById('npp-desc').value = '';
+  openModal('modal-new-personal-project');
+}
+
+function openEditPersonalProjectModal() {
+  if (!currentPersonalProject) return;
+  editingProjectId = currentPersonalProject.id;
+  document.getElementById('npp-title').textContent = 'Edit Project';
+  document.getElementById('npp-btn').textContent = 'Save Changes';
+  document.getElementById('npp-name').value = currentPersonalProject.name;
+  document.getElementById('npp-desc').value = currentPersonalProject.description || '';
+  openModal('modal-new-personal-project');
+}
+
+async function savePersonalProject() {
+  const name = document.getElementById('npp-name').value.trim();
+  const desc = document.getElementById('npp-desc').value.trim();
+  if (!name) { toast('Enter a project name', 'error'); return; }
+  if (editingProjectId) {
+    const p = personalProjects.find(x => x.id === editingProjectId);
+    if (!p) return;
+    p.name = name; p.description = desc; p.modifiedAt = new Date().toISOString();
+    await driveWrite(p, p.fileId);
+    if (currentPersonalProject?.id === editingProjectId) { currentPersonalProject = p; renderProjectView(); }
+    renderPersonalSidebar(); renderPersonalHome();
+    toast('Project updated');
+  } else {
+    const ci = personalProjects.length % COLORS.length;
+    const p = { type: 'personal_project', id: 'pp_' + Date.now(), name, description: desc, color: COLORS[ci], colorHex: COLOR_HEX[ci], tasks: [], sharedWith: [], createdAt: new Date().toISOString(), modifiedAt: new Date().toISOString() };
+    const fileId = await driveWrite(p, null, personalFolderId, 'project_' + p.id + '.json');
+    p.fileId = fileId;
+    personalProjects.unshift(p);
+    renderPersonalSidebar(); renderPersonalHome();
+    toast('Project created!', 'success');
+  }
+  closeModal('modal-new-personal-project');
+}
+
+async function deletePersonalProject() {
+  if (!currentPersonalProject || !confirm('Delete "' + currentPersonalProject.name + '"? This cannot be undone.')) return;
+  await driveDelete(currentPersonalProject.fileId);
+  personalProjects = personalProjects.filter(p => p.id !== currentPersonalProject.id);
+  currentPersonalProject = null;
+  renderPersonalSidebar(); renderPersonalHome();
+  toast('Project deleted');
+}
+
+// Share personal project
+function openShareModal() {
+  if (!currentPersonalProject) return;
+  const shared = currentPersonalProject.sharedWith || [];
+  document.getElementById('share-email').value = '';
+  document.getElementById('share-current').innerHTML = shared.length
+    ? '<div style="font-size:12px;color:var(--text2);margin-bottom:6px">Currently shared with:</div>' +
+      shared.map(s => `<span style="display:inline-flex;align-items:center;gap:5px;background:var(--accent-bg);color:var(--accent);padding:3px 8px;border-radius:12px;font-size:12px;margin:2px">${esc(s.email)}<button onclick="revokeShare('${esc(s.email)}')" style="background:none;color:var(--accent);cursor:pointer;font-size:14px;line-height:1">×</button></span>`).join('')
+    : '';
+  openModal('modal-share');
+}
+
+async function sendShareInvite() {
+  const email = document.getElementById('share-email').value.trim().toLowerCase();
+  if (!email || !currentPersonalProject) return;
+  const token = btoa(JSON.stringify({ fileId: currentPersonalProject.fileId, projectId: currentPersonalProject.id, projectName: currentPersonalProject.name, inviterEmail: currentUser.email, inviterName: currentUser.name, ts: Date.now() })).replace(/=/g,'');
+  if (!currentPersonalProject.sharedWith) currentPersonalProject.sharedWith = [];
+  if (!currentPersonalProject.sharedWith.find(s=>s.email===email)) currentPersonalProject.sharedWith.push({ email, token, addedAt: new Date().toISOString() });
+  await driveWrite(currentPersonalProject, currentPersonalProject.fileId);
+  try { await driveShare(currentPersonalProject.fileId, email, 'reader'); } catch(e) {}
+  const siteUrl = window.location.origin + window.location.pathname;
+  const inviteLink = siteUrl + '?invite=' + token;
+  const subject = encodeURIComponent(currentUser.name + ' shared a FlowBoard project with you');
+  const body = encodeURIComponent('Hi,\n\n' + currentUser.name + ' has shared "' + currentPersonalProject.name + '" with you on FlowBoard.\n\nClick to view: ' + inviteLink + '\n\nSign in with your Google account (' + email + ') to access it.\n\nLink expires in 7 days.\n\n— FlowBoard');
+  window.open('https://mail.google.com/mail/?view=cm&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
+  closeModal('modal-share');
+  toast('Gmail opened with invite', 'success');
+}
+
+async function revokeShare(email) {
+  if (!currentPersonalProject) return;
+  currentPersonalProject.sharedWith = (currentPersonalProject.sharedWith||[]).filter(s=>s.email!==email);
+  await driveWrite(currentPersonalProject, currentPersonalProject.fileId);
+  openShareModal();
+  toast('Access revoked');
+}
+
+// Transfer to org
+function openTransferModal() {
+  if (!currentPersonalProject || !orgs.length) { toast('Join an organization first', 'error'); return; }
+  document.getElementById('transfer-org').innerHTML = orgs.map(o => `<option value="${o.id}">${esc(o.name)}</option>`).join('');
+  openModal('modal-transfer');
+}
+
+async function transferToOrg() {
+  if (!currentPersonalProject) return;
+  const orgId = document.getElementById('transfer-org').value;
+  const vis = document.getElementById('transfer-vis').value;
+  const org = orgs.find(o=>o.id===orgId);
+  if (!org || !org.projectsFolderId) { toast('Cannot find org folder', 'error'); return; }
+  toast('Transferring...');
+  const orgProj = { ...currentPersonalProject, type: 'org_project', visibility: vis, collaborators: [currentUser.email], createdBy: currentUser.email, fileId: undefined, sharedWith: undefined };
+  delete orgProj.fileId; delete orgProj.sharedWith;
+  const newFileId = await driveWrite(orgProj, null, org.projectsFolderId, 'project_' + orgProj.id + '.json');
+  orgProj.fileId = newFileId;
+  await driveDelete(currentPersonalProject.fileId);
+  personalProjects = personalProjects.filter(p=>p.id!==currentPersonalProject.id);
+  currentPersonalProject = null; currentProjectType = null;
+  if (currentOrg && currentOrg.id === orgId) { if (!currentOrg.projects) currentOrg.projects = []; currentOrg.projects.unshift(orgProj); renderOrgSidebar(); }
+  closeModal('modal-transfer');
+  renderPersonalSidebar(); renderPersonalHome();
+  toast('Project transferred!', 'success');
+}
+
+// Invite tokens
+function checkInviteToken() {
+  const params = new URLSearchParams(window.location.search);
+  const token = params.get('invite');
+  if (!token) return;
+  try {
+    const data = JSON.parse(atob(token + '=='));
+    localStorage.setItem('fb_pending_invite', JSON.stringify(data));
+    window.history.replaceState({}, '', window.location.pathname);
+    toast('Invite detected — sign in to accept', 'success');
+  } catch(e) {}
+}
+
+async function checkPendingInvite() {
+  const raw = localStorage.getItem('fb_pending_invite');
+  if (!raw) return;
+  try {
+    const data = JSON.parse(raw);
+    localStorage.removeItem('fb_pending_invite');
+    const project = await driveRead(data.fileId);
+    if (!project) { toast('Invite link expired or invalid', 'error'); return; }
+    if (!personalProjects.find(p=>p.id===project.id)) {
+      project.fileId = data.fileId;
+      project.sharedFromEmail = data.inviterEmail;
+      personalProjects.unshift(project);
+      renderPersonalSidebar(); renderPersonalHome();
+    }
+    toast('Project "' + data.projectName + '" added from ' + data.inviterName, 'success');
+  } catch(e) {}
+}
+
+// ═══════════════════════════════════════════════════
+// ORGANIZATIONS
+// ═══════════════════════════════════════════════════
+async function loadOrgs() {
+  const files = await driveList(`mimeType='application/json' and name contains 'fb_org_' and trashed=false`);
+  orgs = [];
+  for (const f of files) {
+    const d = await driveRead(f.id);
+    if (d && d.type === 'org_meta') {
+      const me = d.members.find(m=>m.email===currentUser.email);
+      if (me) orgs.push({ ...d, fileId: f.id, myRole: me.role });
+    }
+  }
+  if (currentView === 'org-home') renderOrgHome();
+}
+
+function renderOrgHome() {
+  const el = document.getElementById('org-list');
+  if (!el) return;
+  if (!orgs.length) {
+    el.innerHTML = `<div class="empty">
+      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 7V3H2v18h20V7H12z"/></svg></div>
+      <h3>No organizations yet</h3><p>Create one or ask an admin to invite you.</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = orgs.map(o => {
+    const ci = Math.abs(hashStr(o.id)) % COLORS.length;
+    return `<div class="org-card" onclick="openOrg('${o.id}')">
+      <div class="org-icon c${ci+1}" style="color:white">${esc(o.name).charAt(0).toUpperCase()}</div>
+      <div class="org-info">
+        <div class="org-name">${esc(o.name)}</div>
+        <div class="org-meta">${esc(o.description||'')} · ${o.members.length} member${o.members.length!==1?'s':''} · <span class="role-badge role-${o.myRole}">${o.myRole}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function openOrg(id) {
+  currentOrg = orgs.find(o=>o.id===id);
+  if (!currentOrg) return;
+  currentOrgRole = currentOrg.myRole;
+  document.getElementById('sb-org-detail').classList.remove('hidden');
+  await loadOrgProjects();
+  showView('org-projects');
+  renderOrgView();
+}
+
+async function loadOrgProjects() {
+  if (!currentOrg || !currentOrg.projectsFolderId) { currentOrg.projects = []; return; }
+  const files = await driveList(`'${currentOrg.projectsFolderId}' in parents and mimeType='application/json' and trashed=false`);
+  currentOrg.projects = [];
+  for (const f of files) {
+    const d = await driveRead(f.id);
+    if (d && d.type === 'org_project') {
+      const canSee = d.visibility === 'public' || currentOrgRole === 'admin' || currentOrgRole === 'owner' || (d.collaborators||[]).includes(currentUser.email);
+      if (canSee) currentOrg.projects.push({ ...d, fileId: f.id });
+    }
+  }
+}
+
+function renderOrgSidebar() {
+  const el = document.getElementById('sb-org-projects-list');
+  if (!el || !currentOrg) return;
+  const projs = currentOrg.projects || [];
+  if (!projs.length) { el.innerHTML = '<div style="padding:6px 10px;font-size:12px;color:var(--text3)">No projects</div>'; return; }
+  el.innerHTML = projs.map(p => {
+    const done = (p.tasks||[]).filter(t=>t.status==='done').length;
+    const isActive = currentOrgProject && currentOrgProject.id === p.id;
+    return `<div class="sb-item ${isActive?'active':''}" onclick="openOrgProject('${p.id}')">
+      <div class="sb-dot ${p.color}"></div>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(p.name)}</span>
+      ${p.visibility==='hidden'?'<svg width="10" height="10" viewBox="0 0 24 24" fill="var(--danger)" style="flex-shrink:0"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2z"/></svg>':''}
+      <span class="sb-count">${done}/${(p.tasks||[]).length}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderOrgView() {
+  if (!currentOrg) return;
+  document.getElementById('op-breadcrumb').textContent = currentOrg.name;
+  document.getElementById('op-title').textContent = currentOrg.name;
+  document.getElementById('op-sub').textContent = (currentOrg.members||[]).length + ' members · ' + (currentOrg.projects||[]).length + ' projects';
+  document.getElementById('om-breadcrumb').textContent = currentOrg.name;
+  document.getElementById('om-sub').textContent = (currentOrg.members||[]).length + ' member' + ((currentOrg.members||[]).length!==1?'s':'');
+  document.getElementById('os-breadcrumb').textContent = currentOrg.name;
+  document.getElementById('op-actions').innerHTML = `<button class="btn btn-primary" onclick="openNewOrgProjectModal()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>New Project
+  </button>`;
+  const isAdmin = currentOrgRole === 'admin' || currentOrgRole === 'owner';
+  document.getElementById('om-actions').innerHTML = isAdmin
+    ? '<button class="btn btn-primary" onclick="openModal(\'modal-invite-member\')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-9-2V7H4v3H1v2h3v3h2v-3h3v-2H6zm9 4c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>Invite Member</button>'
+    : '';
+  renderOrgProjects();
+  renderOrgMembers();
+  renderOrgSidebar();
+  // Org settings
+  document.getElementById('org-edit-name').value = currentOrg.name;
+  document.getElementById('org-edit-desc').value = currentOrg.description || '';
+  if (isAdmin) {
+    document.getElementById('org-delete-wrap').innerHTML = '<button class="btn btn-danger" onclick="openDeleteOrgModal()">Delete Organization</button>';
+  }
+  const isOwner = currentOrgRole === 'owner';
+  const ownerWrap = document.getElementById('org-transfer-ownership-wrap');
+  if (ownerWrap) {
+    ownerWrap.innerHTML = isAdmin
+      ? '<button class="btn btn-ghost btn-sm" onclick="openTransferOwnershipModal()">Transfer Ownership</button>'
+      : '';
+  }
+}
+
+function renderOrgProjects() {
+  const sort = document.getElementById('org-proj-sort')?.value || 'modified';
+  const sorted = sortProjects([...(currentOrg?.projects||[])], sort);
+  const grid = document.getElementById('org-proj-grid');
+  if (!grid) return;
+  if (!sorted.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2z"/></svg></div>
+      <h3>No projects yet</h3><p>Create the first project for ${esc(currentOrg?.name||'this org')}.</p>
+    </div>`;
+    return;
+  }
+  grid.innerHTML = sorted.map(p => renderProjCard(p, 'org')).join('');
+}
+
+function renderOrgMembers() {
+  const el = document.getElementById('members-list');
+  if (!el || !currentOrg) return;
+  const isAdmin = currentOrgRole === 'admin' || currentOrgRole === 'owner';
+  el.innerHTML = (currentOrg.members||[]).map(m => {
+    const isSelf = m.email === currentUser.email;
+    const isOwner = m.role === 'owner';
+    const canManage = isAdmin && !isSelf && !isOwner;
+    const bgColor = COLOR_HEX[Math.abs(hashStr(m.email)) % COLOR_HEX.length];
+    return `<div class="member-row">
+      <div class="member-av" style="background:${bgColor}">${(m.name||m.email).charAt(0).toUpperCase()}</div>
+      <div class="member-info">
+        <div class="member-name">${esc(m.name||m.email)} ${isSelf?'<span style="font-size:11px;color:var(--text3)">(you)</span>':''}</div>
+        <div class="member-email">${esc(m.email)}</div>
+      </div>
+      <div class="member-actions">
+        ${canManage ? `
+          <select class="role-sel" onchange="updateMemberRole('${esc(m.email)}',this.value)">
+            <option value="member" ${m.role==='member'?'selected':''}>Member</option>
+            <option value="admin" ${m.role==='admin'?'selected':''}>Admin</option>
+          </select>
+          <button class="btn btn-danger btn-sm" onclick="removeMember('${esc(m.email)}')">Remove</button>
+        ` : `<span class="role-badge role-${m.role}">${m.role}</span>`}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function createOrg() {
+  const name = document.getElementById('co-name').value.trim();
+  const desc = document.getElementById('co-desc').value.trim();
+  if (!name) { toast('Enter an org name', 'error'); return; }
+  toast('Creating organization...');
+  const orgFolderId = await ensureFolder(ORG_FOLDER_NAME);
+  const thisFolderId = await ensureFolder('org_' + Date.now(), orgFolderId);
+  const projectsFolderId = await ensureFolder('projects', thisFolderId);
+  const meta = {
+    type: 'org_meta', id: 'org_' + Date.now(), name, description: desc, projectsFolderId,
+    members: [{ email: currentUser.email, name: currentUser.name, role: 'owner', joinedAt: new Date().toISOString() }],
+    createdAt: new Date().toISOString(), createdBy: currentUser.email,
+    alerts: { due: true, dueMins: 60, pastDue: true, pastDueTime: '09:00' }
+  };
+  const fileId = await driveWrite(meta, null, thisFolderId, 'fb_org_' + meta.id + '.json');
+  meta.fileId = fileId; meta.myRole = 'owner';
+  orgs.unshift(meta);
+  closeModal('modal-create-org');
+  renderOrgHome();
+  toast('Organization created!', 'success');
+}
+
+async function inviteMember() {
+  const email = document.getElementById('invite-email').value.trim().toLowerCase();
+  const role = document.getElementById('invite-role').value;
+  if (!email || !currentOrg) return;
+  if (currentOrg.members.find(m=>m.email===email)) { toast('Already a member', 'error'); return; }
+  currentOrg.members.push({ email, name: email, role, joinedAt: new Date().toISOString() });
+  await driveWrite(currentOrg, currentOrg.fileId);
+  await driveShare(currentOrg.fileId, email, 'writer');
+  if (currentOrg.projectsFolderId) await driveShare(currentOrg.projectsFolderId, email, 'writer');
+  closeModal('modal-invite-member');
+  document.getElementById('invite-email').value = '';
+  renderOrgMembers();
+  toast(email + ' invited as ' + role, 'success');
+}
+
+async function updateMemberRole(email, role) {
+  const m = currentOrg.members.find(m=>m.email===email);
+  if (m) { m.role = role; await driveWrite(currentOrg, currentOrg.fileId); toast('Role updated'); }
+}
+
+async function removeMember(email) {
+  if (!confirm('Remove ' + email + ' from ' + currentOrg.name + '?')) return;
+  currentOrg.members = currentOrg.members.filter(m=>m.email!==email);
+  await driveWrite(currentOrg, currentOrg.fileId);
+  renderOrgMembers();
+  toast('Member removed');
+}
+
+async function saveOrgSettings() {
+  if (!currentOrg) return;
+  currentOrg.name = document.getElementById('org-edit-name').value.trim() || currentOrg.name;
+  currentOrg.description = document.getElementById('org-edit-desc').value.trim();
+  await driveWrite(currentOrg, currentOrg.fileId);
+  renderOrgView();
+  const idx = orgs.findIndex(o=>o.id===currentOrg.id);
+  if (idx !== -1) orgs[idx] = currentOrg;
+  toast('Org settings saved', 'success');
+}
+
+async function saveOrgAlerts() {
+  if (!currentOrg) return;
+  currentOrg.alerts = {
+    due: document.getElementById('oal-due').checked,
+    dueMins: parseInt(document.getElementById('oal-due-mins').value),
+    pastDue: document.getElementById('oal-pastdue').checked,
+    pastDueTime: document.getElementById('oal-pastdue-time').value
+  };
+  await driveWrite(currentOrg, currentOrg.fileId);
+  toast('Org alerts saved', 'success');
+}
+
+function openTransferOwnershipModal() {
+  if (!currentOrg) return;
+  const otherAdmins = currentOrg.members.filter(m =>
+    m.email !== currentUser.email && (m.role === 'admin' || m.role === 'owner')
+  );
+  const otherMembers = currentOrg.members.filter(m => m.email !== currentUser.email);
+  const candidates = otherAdmins.length ? otherAdmins : otherMembers;
+  if (!candidates.length) { toast('No other members to transfer to', 'error'); return; }
+  document.getElementById('new-owner-sel').innerHTML = candidates.map(m =>
+    '<option value="' + esc(m.email) + '">' + esc(m.name||m.email) + ' (' + m.role + ')</option>'
+  ).join('');
+  document.getElementById('transfer-drive-data').checked = false;
+  document.getElementById('transfer-ownership-confirm').value = '';
+  openModal('modal-transfer-ownership');
+}
+
+async function executeTransferOwnership() {
+  if (!currentOrg) return;
+  const newOwnerEmail = document.getElementById('new-owner-sel').value;
+  const moveDriveData = document.getElementById('transfer-drive-data').checked;
+  const confirmVal = document.getElementById('transfer-ownership-confirm').value.trim();
+
+  if (!newOwnerEmail) { toast('Select a new owner', 'error'); return; }
+  if (confirmVal !== 'CONFIRM') {
+    toast('Type CONFIRM in all caps to proceed', 'error');
+    const field = document.getElementById('transfer-ownership-confirm');
+    field.style.borderColor = 'var(--danger)';
+    field.focus();
+    setTimeout(() => { field.style.borderColor = ''; }, 1500);
+    return;
+  }
+
+  toast('Transferring ownership...');
+
+  // Update roles — new owner becomes owner, current user becomes admin
+  currentOrg.members = currentOrg.members.map(m => {
+    if (m.email === newOwnerEmail) return { ...m, role: 'owner' };
+    if (m.email === currentUser.email) return { ...m, role: 'admin' };
+    return m;
+  });
+
+  if (moveDriveData) {
+    // Move org data to new owner's Drive by sharing with writer + updating metadata
+    // We share everything with the new owner at writer level (they already should have it)
+    // The org metadata file location doesn't change — Drive sharing handles access
+    // What changes is the conceptual "ownership" recorded in the metadata
+    currentOrg.ownedBy = newOwnerEmail;
+    currentOrg.transferredAt = new Date().toISOString();
+    currentOrg.transferredFrom = currentUser.email;
+
+    // Ensure new owner has writer access to all org files
+    try {
+      await driveShare(currentOrg.fileId, newOwnerEmail, 'writer');
+      if (currentOrg.projectsFolderId) {
+        await driveShare(currentOrg.projectsFolderId, newOwnerEmail, 'writer');
+        // Share all project files individually
+        const files = await driveList(
+          "'" + currentOrg.projectsFolderId + "' in parents and mimeType='application/json' and trashed=false",
+          'files(id)'
+        );
+        for (const f of files) {
+          await driveShare(f.id, newOwnerEmail, 'writer');
+        }
+      }
+    } catch(e) {
+      console.error('Share error during transfer:', e);
+    }
+
+    toast('Data access granted to new owner');
+  }
+
+  // Save updated org metadata
+  await driveWrite(currentOrg, currentOrg.fileId);
+
+  // Update local state
+  currentOrgRole = 'admin';
+  const orgIdx = orgs.findIndex(o => o.id === currentOrg.id);
+  if (orgIdx !== -1) { orgs[orgIdx] = { ...currentOrg, myRole: 'admin' }; }
+
+  closeModal('modal-transfer-ownership');
+  renderOrgView();
+  toast('Ownership transferred to ' + newOwnerEmail, 'success');
+}
+
+async function leaveOrg() {
+  if (!currentOrg) return;
+  const admins = currentOrg.members.filter(m => m.role==='admin'||m.role==='owner');
+  const otherAdmins = admins.filter(m=>m.email!==currentUser.email);
+  const isOnlyAdmin = (currentOrgRole==='admin'||currentOrgRole==='owner') && otherAdmins.length===0;
+  const others = currentOrg.members.filter(m=>m.email!==currentUser.email);
+  if (isOnlyAdmin && others.length) {
+    document.getElementById('transfer-owner-sel').innerHTML = others.map(m=>`<option value="${esc(m.email)}">${esc(m.name||m.email)}</option>`).join('');
+    openModal('modal-transfer-owner'); return;
+  }
+  if (!confirm('Leave "' + currentOrg.name + '"?')) return;
+  currentOrg.members = currentOrg.members.filter(m=>m.email!==currentUser.email);
+  if (currentOrg.members.length) await driveWrite(currentOrg, currentOrg.fileId);
+  else await driveDelete(currentOrg.fileId);
+  orgs = orgs.filter(o=>o.id!==currentOrg.id);
+  currentOrg = null; currentOrgProject = null;
+  document.getElementById('sb-org-detail').classList.add('hidden');
+  renderOrgHome(); showView('org-home');
+  toast('You have left the organization');
+}
+
+async function promoteAndLeave() {
+  const email = document.getElementById('transfer-owner-sel').value;
+  if (!email || !currentOrg) return;
+  const m = currentOrg.members.find(m=>m.email===email);
+  if (m) m.role = 'admin';
+  currentOrg.members = currentOrg.members.filter(m=>m.email!==currentUser.email);
+  await driveWrite(currentOrg, currentOrg.fileId);
+  orgs = orgs.filter(o=>o.id!==currentOrg.id);
+  currentOrg = null; currentOrgProject = null;
+  closeModal('modal-transfer-owner');
+  document.getElementById('sb-org-detail').classList.add('hidden');
+  renderOrgHome(); showView('org-home');
+  toast('Ownership transferred, you have left the org');
+}
+
+function openDeleteOrgModal() {
+  document.getElementById('del-org-name').textContent = currentOrg?.name || '';
+  document.getElementById('del-org-confirm').value = '';
+  openModal('modal-delete-org');
+}
+
+async function deleteOrg() {
+  if (document.getElementById('del-org-confirm').value !== 'DELETE') { toast('Type DELETE in caps to confirm', 'error'); return; }
+  if (!currentOrg) return;
+  toast('Deleting org...');
+  if (currentOrg.projectsFolderId) {
+    const files = await driveList("'" + currentOrg.projectsFolderId + "' in parents and trashed=false", 'files(id)');
+    for (const f of files) await driveDelete(f.id);
+  }
+  await driveDelete(currentOrg.fileId);
+  orgs = orgs.filter(o=>o.id!==currentOrg.id);
+  currentOrg = null; currentOrgProject = null;
+  closeModal('modal-delete-org');
+  document.getElementById('sb-org-detail').classList.add('hidden');
+  renderOrgHome(); showView('org-home');
+  toast('Organization deleted');
+}
+
+// ── ORG PROJECTS ──
+function openNewOrgProjectModal() {
+  editingOrgProjectId = null;
+  document.getElementById('nop-title').textContent = 'New Org Project';
+  document.getElementById('nop-btn').textContent = 'Create Project';
+  document.getElementById('nop-name').value = '';
+  document.getElementById('nop-desc').value = '';
+  document.getElementById('nop-visibility').value = 'public';
+  openModal('modal-new-org-project');
+}
+
+function openEditOrgProjectModal() {
+  if (!currentOrgProject) return;
+  editingOrgProjectId = currentOrgProject.id;
+  document.getElementById('nop-title').textContent = 'Edit Project';
+  document.getElementById('nop-btn').textContent = 'Save Changes';
+  document.getElementById('nop-name').value = currentOrgProject.name;
+  document.getElementById('nop-desc').value = currentOrgProject.description || '';
+  document.getElementById('nop-visibility').value = currentOrgProject.visibility || 'public';
+  openModal('modal-new-org-project');
+}
+
+async function saveOrgProject() {
+  const name = document.getElementById('nop-name').value.trim();
+  const desc = document.getElementById('nop-desc').value.trim();
+  const vis = document.getElementById('nop-visibility').value;
+  if (!name) { toast('Enter a project name', 'error'); return; }
+  if (editingOrgProjectId) {
+    const p = currentOrg.projects.find(x=>x.id===editingOrgProjectId);
+    if (!p) return;
+    p.name = name; p.description = desc; p.visibility = vis; p.modifiedAt = new Date().toISOString();
+    await driveWrite(p, p.fileId);
+    if (currentOrgProject?.id === editingOrgProjectId) { currentOrgProject = p; renderProjectView(); }
+    renderOrgSidebar(); renderOrgProjects();
+    toast('Project updated');
+  } else {
+    const ci = (currentOrg.projects||[]).length % COLORS.length;
+    const p = { type: 'org_project', id: 'op_' + Date.now(), name, description: desc, visibility: vis, color: COLORS[ci], colorHex: COLOR_HEX[ci], tasks: [], collaborators: [currentUser.email], createdBy: currentUser.email, createdAt: new Date().toISOString(), modifiedAt: new Date().toISOString() };
+    const fileId = await driveWrite(p, null, currentOrg.projectsFolderId, 'project_' + p.id + '.json');
+    p.fileId = fileId;
+    if (!currentOrg.projects) currentOrg.projects = [];
+    currentOrg.projects.unshift(p);
+    renderOrgSidebar(); renderOrgProjects();
+    toast('Project created!', 'success');
+  }
+  closeModal('modal-new-org-project');
+}
+
+function openOrgProject(id) {
+  if (!currentOrg) return;
+  const p = (currentOrg.projects||[]).find(x=>x.id===id);
+  if (!p) return;
+  currentOrgProject = p;
+  currentProjectType = 'org';
+  openTaskPanelId = null;
+  renderOrgSidebar();
+  renderProjectView();
+}
+
+async function deleteOrgProject() {
+  if (!currentOrgProject || !confirm('Delete "' + currentOrgProject.name + '"?')) return;
+  await driveDelete(currentOrgProject.fileId);
+  currentOrg.projects = currentOrg.projects.filter(p=>p.id!==currentOrgProject.id);
+  currentOrgProject = null;
+  renderOrgSidebar(); renderOrgProjects(); showView('org-projects');
+  toast('Project deleted');
+}
+
+function openCollabsModal() {
+  if (!currentOrgProject || !currentOrg) return;
+  const collabs = currentOrgProject.collaborators || [];
+  document.getElementById('collab-list').innerHTML = currentOrg.members.map(m => `
+    <div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">
+      <input type="checkbox" id="collab_${esc(m.email)}" ${collabs.includes(m.email)?'checked':''} style="width:15px;height:15px;accent-color:var(--accent)">
+      <label for="collab_${esc(m.email)}" style="font-size:13px;cursor:pointer;flex:1">${esc(m.name||m.email)} <span style="font-size:11px;color:var(--text3)">${esc(m.email)}</span></label>
+    </div>`).join('');
+  openModal('modal-collabs');
+}
+
+async function saveCollabs() {
+  if (!currentOrgProject) return;
+  const checked = [];
+  document.querySelectorAll('#collab-list input[type=checkbox]').forEach(cb => { if(cb.checked) checked.push(cb.id.replace('collab_','')); });
+  currentOrgProject.collaborators = checked;
+  await driveWrite(currentOrgProject, currentOrgProject.fileId);
+  closeModal('modal-collabs');
+  renderProjectView();
+  toast('Collaborators updated');
+}
+
+// ═══════════════════════════════════════════════════
+// PROJECT VIEW (shared between personal & org)
+// ═══════════════════════════════════════════════════
+function currentProject() {
+  return currentProjectType === 'personal' ? currentPersonalProject : currentOrgProject;
+}
+
+function renderProjectView() {
+  const p = currentProject();
+  if (!p) return;
+  showView('project');
+
+  // Breadcrumb
+  const bc = document.getElementById('proj-breadcrumb');
+  if (currentProjectType === 'personal') {
+    bc.innerHTML = '<span onclick="renderPersonalHome();showView(\'personal-home\')">My Projects</span><span class="breadcrumb-sep">›</span><span>' + esc(p.name) + '</span>';
+  } else {
+    bc.innerHTML = '<span onclick="showView(\'org-projects\');renderOrgProjects()">' + esc(currentOrg?.name||'Org') + '</span><span class="breadcrumb-sep">›</span><span>' + esc(p.name) + '</span>';
+  }
+
+  document.getElementById('proj-title').textContent = p.name;
+  document.getElementById('proj-desc').innerHTML = (p.description||'') + (p.visibility==='hidden' ? '<span class="lock-badge"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2z"/></svg> Hidden</span>' : '');
+
+  const canEdit = canEditProject(p);
+  const canDelete = canEdit;
+  const isAdmin = currentOrgRole === 'admin' || currentOrgRole === 'owner';
+
+  // Actions
+  const acts = [];
+  if (currentProjectType === 'personal') {
+    acts.push('<button class="btn btn-ghost btn-sm" onclick="openShareModal()">Share</button>');
+    if (orgs.length) acts.push('<button class="btn btn-ghost btn-sm" onclick="openTransferModal()">Transfer to Org</button>');
+  }
+  if (currentProjectType === 'org' && (isAdmin || p.createdBy === currentUser.email)) {
+    acts.push('<button class="btn btn-ghost btn-sm" onclick="openCollabsModal()">Collaborators</button>');
+  }
+  if (canEdit) acts.push('<button class="btn btn-ghost btn-sm" onclick="' + (currentProjectType==='personal'?'openEditPersonalProjectModal()':'openEditOrgProjectModal()') + '">Edit</button>');
+  if (canDelete) acts.push('<button class="btn btn-danger btn-sm" onclick="' + (currentProjectType==='personal'?'deletePersonalProject()':'deleteOrgProject()') + '">Delete</button>');
+  document.getElementById('proj-actions').innerHTML = acts.join('');
+
+  // Show/hide task add
+  document.getElementById('task-add-row').style.display = canEdit ? '' : 'none';
+
+  // Reset filter
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.filter-btn').classList.add('active');
+  currentFilter = 'all';
+  if (document.getElementById('task-sort')) document.getElementById('task-sort').value = 'created';
+
+  updateProjectStats(p);
+  renderTaskList();
+}
+
+function canEditProject(p) {
+  if (currentProjectType === 'personal') return true;
+  const isAdmin = currentOrgRole === 'admin' || currentOrgRole === 'owner';
+  return isAdmin || p.createdBy === currentUser.email;
+}
+
+function canAssignOthers(p) {
+  if (currentProjectType === 'personal') return true;
+  const isAdmin = currentOrgRole === 'admin' || currentOrgRole === 'owner';
+  return isAdmin || p.createdBy === currentUser.email;
+}
+
+function updateProjectStats(p) {
+  const tasks = p.tasks || [];
+  const todo = tasks.filter(t=>t.status==='todo').length;
+  const prog = tasks.filter(t=>t.status==='progress').length;
+  const done = tasks.filter(t=>t.status==='done').length;
+  document.getElementById('stat-todo').textContent = todo;
+  document.getElementById('stat-prog').textContent = prog;
+  document.getElementById('stat-done').textContent = done;
+  const pct = tasks.length ? Math.round(done/tasks.length*100) : 0;
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-label').textContent = done + ' of ' + tasks.length + ' complete';
+  document.getElementById('prog-pct').textContent = pct + '%';
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  openTaskPanelId = null;
+  renderTaskList();
+}
+
+function renderTaskList() {
+  const p = currentProject();
+  const el = document.getElementById('task-list');
+  if (!p || !el) return;
+  let tasks = [...(p.tasks||[])];
+  if (currentFilter !== 'all') tasks = tasks.filter(t=>t.status===currentFilter);
+
+  const sort = document.getElementById('task-sort')?.value || 'created';
+  const statusOrd = { todo:0, progress:1, done:2 };
+  tasks.sort((a,b) => {
+    if (sort==='alpha') return a.title.localeCompare(b.title);
+    if (sort==='due') { if(!a.dueDate&&!b.dueDate) return 0; if(!a.dueDate) return 1; if(!b.dueDate) return -1; return new Date(a.dueDate)-new Date(b.dueDate); }
+    if (sort==='status') return statusOrd[a.status]-statusOrd[b.status];
+    if (sort==='assignee') { const aa=(a.assignees||[])[0]||''; const ba=(b.assignees||[])[0]||''; return aa.localeCompare(ba); }
+    return new Date(a.createdAt)-new Date(b.createdAt);
+  });
+
+  if (!tasks.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg></div><h3>' + (currentFilter==='all'?'No tasks yet':'Nothing here') + '</h3><p>' + (currentFilter==='all'?'Add your first task above.':'No tasks with this status.') + '</p></div>';
+    return;
+  }
+
+  const canEdit = canEditProject(p);
+  const now = new Date();
+  el.innerHTML = tasks.map(t => renderTaskRow(t, canEdit, now)).join('');
+
+  // Re-open panel if one was open
+  if (openTaskPanelId) {
+    const task = (p.tasks||[]).find(t=>t.id===openTaskPanelId);
+    if (task) insertTaskPanel(task, canEdit);
+  }
+}
+
+function renderTaskRow(t, canEdit, now) {
+  const sc = t.status==='todo'?'status-todo':t.status==='progress'?'status-prog':'status-done';
+  const created = new Date(t.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'});
+  const isOpen = openTaskPanelId === t.id;
+  const assignees = t.assignees || [];
+
+  let metaParts = ['Added ' + created];
+  if (t.dueDate) {
+    const due = new Date(t.dueDate);
+    const isOD = due < now && t.status !== 'done';
+    metaParts.push('<span class="task-meta-badge' + (isOD?' overdue':'') + '">📅 ' + due.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + (isOD?' · PAST DUE':'') + '</span>');
+  }
+  if ((t.notes||[]).length) metaParts.push('<span class="task-meta-badge">📝 ' + t.notes.length + ' note' + (t.notes.length!==1?'s':'') + '</span>');
+  if (assignees.length) metaParts.push('<span class="task-meta-badge">👤 ' + assignees.map(e => { const p2 = peopleList.find(x=>x.key===e||x.email===e); return p2 ? p2.name.split(' ')[0] : e.split('@')[0]; }).join(', ') + '</span>');
+
+  return `<div class="task-row ${t.status==='done'?'done':''}" id="task-${t.id}">
+    <div class="task-row-main">
+      <div class="task-chk ${t.status==='done'?'checked':''}" onclick="event.stopPropagation();toggleTask('${t.id}')">
+        <svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>
+      </div>
+      <div class="task-body" onclick="toggleTaskPanel('${t.id}')">
+        <div class="task-title">${esc(t.title)}</div>
+        <div class="task-meta">${metaParts.join(' · ')}</div>
+      </div>
+      <div class="task-row-actions">
+        ${canEdit ? `<select class="status-sel ${sc}" onchange="setTaskStatus('${t.id}',this.value)" onclick="event.stopPropagation()">
+          <option value="todo" ${t.status==='todo'?'selected':''}>To Do</option>
+          <option value="progress" ${t.status==='progress'?'selected':''}>In Progress</option>
+          <option value="done" ${t.status==='done'?'selected':''}>Complete</option>
+        </select>` : `<span class="badge badge-${t.status==='todo'?'todo':t.status==='progress'?'prog':'done'}">${t.status==='todo'?'To Do':t.status==='progress'?'In Progress':'Complete'}</span>`}
+        <svg class="expand-icon ${isOpen?'open':''}" viewBox="0 0 24 24" onclick="toggleTaskPanel('${t.id}')"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+        ${canEdit ? `<button class="task-del-btn" onclick="event.stopPropagation();deleteTask('${t.id}')"><svg viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>` : ''}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleTaskPanel(taskId) {
+  const p = currentProject();
+  if (!p) return;
+  const task = (p.tasks||[]).find(t=>t.id===taskId);
+  if (!task) return;
+  const existing = document.getElementById('panel-' + taskId);
+  if (existing) {
+    existing.remove();
+    openTaskPanelId = (openTaskPanelId === taskId) ? null : taskId;
+    // Update chevron
+    const row = document.getElementById('task-' + taskId);
+    if (row) { const chevron = row.querySelector('.expand-icon'); if(chevron) chevron.classList.toggle('open', openTaskPanelId===taskId); }
+    if (openTaskPanelId !== taskId) return;
+  } else {
+    if (openTaskPanelId) {
+      const old = document.getElementById('panel-' + openTaskPanelId);
+      if (old) old.remove();
+      const oldRow = document.getElementById('task-' + openTaskPanelId);
+      if (oldRow) { const ch = oldRow.querySelector('.expand-icon'); if(ch) ch.classList.remove('open'); }
+    }
+    openTaskPanelId = taskId;
+    const row = document.getElementById('task-' + taskId);
+    if (row) { const chevron = row.querySelector('.expand-icon'); if(chevron) chevron.classList.add('open'); }
+  }
+  const canEdit = canEditProject(p);
+  insertTaskPanel(task, canEdit);
+}
+
+function insertTaskPanel(task, canEdit) {
+  const taskRow = document.getElementById('task-' + task.id);
+  if (!taskRow) return;
+  const panel = document.createElement('div');
+  panel.className = 'task-panel';
+  panel.id = 'panel-' + task.id;
+  panel.innerHTML = buildTaskPanel(task, canEdit);
+  taskRow.insertAdjacentElement('afterend', panel);
+  // Dropdown handles assignment - no extra wiring needed
+}
+
+function buildTaskPanel(task, canEdit) {
+  const notes = task.notes || [];
+  const assignees = task.assignees || [];
+  const hasDue = !!task.dueDate;
+  const dueDate = hasDue ? task.dueDate.split('T')[0] : '';
+  const dueTime = hasDue && task.dueDate.includes('T') ? task.dueDate.split('T')[1].substring(0,5) : '09:00';
+  const isSynced = !!task.calEventId;
+  const p = currentProject();
+  const canAssign = canEdit;
+  const canAssignOth = canAssignOthers(p);
+
+  let html = '';
+
+  // Notes section
+  html += '<div class="panel-section">';
+  html += '<div class="panel-label">Notes & Updates</div>';
+  html += '<div class="notes-log" id="nlog-' + task.id + '">';
+  if (notes.length) {
+    html += notes.map(n => '<div class="note-entry"><div class="note-ts">' + new Date(n.ts).toLocaleString() + '</div><div class="note-text">' + esc(n.text) + '</div></div>').join('');
+  } else {
+    html += '<div style="font-size:13px;color:var(--text3);padding:6px 0">No notes yet.</div>';
+  }
+  html += '</div>';
+  if (canEdit) {
+    html += '<div class="note-add"><textarea class="note-textarea" id="ntxt-' + task.id + '" placeholder="Add an update..."></textarea>';
+    html += '<button class="btn btn-primary btn-sm" onclick="addNote(\'' + task.id + '\')">Add</button></div>';
+  }
+  html += '</div>';
+
+  // Due date section
+  html += '<div class="panel-section">';
+  html += '<div class="panel-label">Due Date</div>';
+  html += '<div class="due-row">';
+  html += '<label class="due-toggle"><input type="checkbox" id="duetog-' + task.id + '" ' + (hasDue?'checked':'') + ' onchange="toggleDueDate(\'' + task.id + '\')" ' + (!canEdit?'disabled':'') + '> Enable due date</label>';
+  html += '<div class="due-inputs" id="dueinputs-' + task.id + '" style="' + (!hasDue?'display:none':'') + '">';
+  html += '<input type="date" class="due-input" id="duedate-' + task.id + '" value="' + dueDate + '" ' + (!canEdit?'disabled':'') + ' onchange="saveDueDate(\'' + task.id + '\')">';
+  html += '<input type="time" class="due-input" id="duetime-' + task.id + '" value="' + dueTime + '" ' + (!canEdit?'disabled':'') + ' onchange="saveDueDate(\'' + task.id + '\')">';
+  html += '</div></div></div>';
+
+  // Assign section
+  html += '<div class="panel-section">';
+  html += '<div class="panel-label">Assigned To</div>';
+  html += '<div class="assign-row">';
+  html += '<div class="assignee-chips" id="achips-' + task.id + '">';
+  if (assignees.length) {
+    html += assignees.map(e => {
+      const person = peopleList.find(x=>x.key===e||x.email===e||x.name===e);
+      const name = person ? person.name : e;
+      return '<span class="assignee-chip">' + esc(name) + (canEdit?'<button onclick="unassign(\'' + task.id + '\',\'' + esc(e) + '\')">×</button>':'') + '</span>';
+    }).join('');
+  } else {
+    html += '<span style="font-size:12px;color:var(--text3)">Nobody assigned</span>';
+  }
+  html += '</div>';
+  if (canAssign) {
+    const assignable = getAssignablePeople(canAssignOth);
+    const available = assignable.filter(x => !assignees.includes(x.key) && !assignees.includes(x.email) && !assignees.includes(x.name));
+    html += '<select class="assign-select-dd" id="asel-' + task.id + '" onchange="assignFromDropdown(\'' + task.id + '\',this)">';
+    html += '<option value="">+ Assign someone...</option>';
+    available.forEach(person => {
+      html += '<option value="' + esc(person.key) + '">' + esc(person.name) + (person.email?' ('+esc(person.email)+')':'') + '</option>';
+    });
+    html += '<option value="__custom__">+ Add new person...</option>';
+    html += '</select>';
+  }
+  html += '</div></div>';
+
+  // Calendar / alerts section
+  if (canEdit) {
+    html += '<div class="panel-section">';
+    html += '<div class="panel-label">Calendar & Alerts</div>';
+    html += '<div class="panel-actions">';
+    html += '<button class="btn-xs ' + (isSynced?'active':'') + '" onclick="syncToCalendar(\'' + task.id + '\')">';
+    html += '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>';
+    html += (isSynced ? '✓ Synced to Calendar' : 'Sync to Calendar') + '</button>';
+    if (isSynced) {
+      html += '<button class="btn-xs" onclick="unsyncCalendar(\'' + task.id + '\')">';
+      html += '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>Remove</button>';
+    }
+    html += '</div></div>';
+  }
+
+  return html;
+}
+
+// ── TASK CRUD ──
+async function addTask() {
+  const input = document.getElementById('task-input');
+  const title = input.value.trim();
+  if (!title) return;
+  const p = currentProject();
+  if (!p) return;
+  const task = { id: 't_' + Date.now(), title, status: 'todo', notes: [], assignees: [], createdAt: new Date().toISOString() };
+  if (!p.tasks) p.tasks = [];
+  p.tasks.push(task);
+  p.modifiedAt = new Date().toISOString();
+  input.value = '';
+  await driveWrite(p, p.fileId);
+  syncProjectToSidebar(p);
+  updateProjectStats(p);
+  renderTaskList();
+}
+
+async function toggleTask(taskId) {
+  const p = currentProject();
+  const task = (p.tasks||[]).find(t=>t.id===taskId);
+  if (!task) return;
+  task.status = task.status === 'done' ? 'todo' : 'done';
+  p.modifiedAt = new Date().toISOString();
+  await driveWrite(p, p.fileId);
+  syncProjectToSidebar(p);
+  updateProjectStats(p);
+  renderTaskList();
+}
+
+async function setTaskStatus(taskId, status) {
+  const p = currentProject();
+  const task = (p.tasks||[]).find(t=>t.id===taskId);
+  if (!task) return;
+  task.status = status;
+  p.modifiedAt = new Date().toISOString();
+  await driveWrite(p, p.fileId);
+  syncProjectToSidebar(p);
+  updateProjectStats(p);
+  renderTaskList();
+}
+
+async function deleteTask(taskId) {
+  const p = currentProject();
+  if (!p) return;
+  p.tasks = (p.tasks||[]).filter(t=>t.id!==taskId);
+  p.modifiedAt = new Date().toISOString();
+  if (openTaskPanelId === taskId) openTaskPanelId = null;
+  await driveWrite(p, p.fileId);
+  syncProjectToSidebar(p);
+  updateProjectStats(p);
+  renderTaskList();
+}
+
+async function addNote(taskId) {
+  const p = currentProject();
+  const task = (p.tasks||[]).find(t=>t.id===taskId);
+  if (!task) return;
+  const input = document.getElementById('ntxt-' + taskId);
+  const text = input.value.trim();
+  if (!text) return;
+  if (!task.notes) task.notes = [];
+  task.notes.push({ ts: new Date().toISOString(), text });
+  input.value = '';
+  p.modifiedAt = new Date().toISOString();
+  await driveWrite(p, p.fileId);
+  // Refresh notes log
+  const log = document.getElementById('nlog-' + taskId);
+  if (log) log.innerHTML = task.notes.map(n=>'<div class="note-entry"><div class="note-ts">'+new Date(n.ts).toLocaleString()+'</div><div class="note-text">'+esc(n.text)+'</div></div>').join('');
+  syncProjectToSidebar(p);
+  toast('Note added');
+}
+
+function toggleDueDate(taskId) {
+  const chk = document.getElementById('duetog-' + taskId);
+  const inputs = document.getElementById('dueinputs-' + taskId);
+  if (!chk || !inputs) return;
+  inputs.style.display = chk.checked ? 'flex' : 'none';
+  if (!chk.checked) saveDueDate(taskId, true);
+}
+
+async function saveDueDate(taskId, clear=false) {
+  const p = currentProject();
+  const task = (p.tasks||[]).find(t=>t.id===taskId);
+  if (!task) return;
+  if (clear) { task.dueDate = null; }
+  else {
+    const d = document.getElementById('duedate-' + taskId)?.value;
+    const ti = document.getElementById('duetime-' + taskId)?.value || '09:00';
+    if (d) task.dueDate = d + 'T' + ti;
+  }
+  p.modifiedAt = new Date().toISOString();
+  await driveWrite(p, p.fileId);
+  renderTaskList();
+  toast(clear ? 'Due date removed' : 'Due date saved');
+}
+
+// ── ASSIGNMENT ──
+function getAssignablePeople(canAssignOth) {
+  let people = [...peopleList];
+  if (!people.find(p=>p.email===currentUser.email)) {
+    people.unshift({ name: currentUser.name + ' (me)', email: currentUser.email, key: currentUser.email });
+  } else {
+    people = people.map(p => p.email===currentUser.email ? {...p, name: p.name.replace(' (me)','')+' (me)'} : p);
+  }
+  if (currentProjectType === 'org' && currentOrg) {
+    currentOrg.members.forEach(m => {
+      if (!people.find(p=>p.email===m.email||p.key===m.email)) {
+        people.push({ name: m.name||m.email, email: m.email, key: m.email });
+      }
+    });
+  }
+  if (!canAssignOth) people = people.filter(p=>p.email===currentUser.email||p.key===currentUser.email);
+  return people;
+}
+
+async function assignFromDropdown(taskId, selectEl) {
+  const val = selectEl.value;
+  if (!val) return;
+  selectEl.value = '';
+  if (val === '__custom__') {
+    const name = prompt('Enter name or email to assign:');
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    addPersonToList(trimmed, '');
+    renderPeopleSettings();
+    await assignPerson(taskId, trimmed);
+    return;
+  }
+  await assignPerson(taskId, val);
+}
+
+async function assignPerson(taskId, key) {
+  const p = currentProject();
+  if (!p) return;
+  const task = (p.tasks||[]).find(t=>t.id===taskId);
+  if (!task) return;
+  if (!task.assignees) task.assignees = [];
+  if (task.assignees.includes(key)) return;
+  task.assignees.push(key);
+  const existing = peopleList.find(x=>x.key===key||x.email===key||x.name===key);
+  if (!existing) { addPersonToList(key, ''); renderPeopleSettings(); }
+  p.modifiedAt = new Date().toISOString();
+  await driveWrite(p, p.fileId);
+  syncProjectToSidebar(p);
+  renderTaskList();
+  toast('Assigned');
+}
+
+async function unassign(taskId, personKey) {
+  const p = currentProject();
+  const task = (p.tasks||[]).find(t=>t.id===taskId);
+  if (!task) return;
+  task.assignees = (task.assignees||[]).filter(e=>e!==personKey);
+  p.modifiedAt = new Date().toISOString();
+  await driveWrite(p, p.fileId);
+  renderTaskList();
+}
+
+// ── CALENDAR ──
+async function syncToCalendar(taskId) {
+  if (!accessToken) { toast('Sign in required', 'error'); return; }
+  const p = currentProject();
+  const task = (p.tasks||[]).find(t=>t.id===taskId);
+  if (!task) return;
+  if (!task.dueDate) { toast('Set a due date first', 'error'); return; }
+  const due = new Date(task.dueDate);
+  const al = settings.alerts;
+  const hasTime = task.dueDate.includes('T');
+  const overrides = [];
+  if (al.due) overrides.push({ method:'popup', minutes: al.dueMins });
+  if (al.email) overrides.push({ method:'email', minutes: al.emailMins });
+  const event = {
+    summary: task.title + ' — FlowBoard',
+    description: 'Project: ' + p.name + (task.notes?.length ? '\n\nLatest note: ' + task.notes[task.notes.length-1].text : ''),
+    start: hasTime ? { dateTime: due.toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone } : { date: due.toISOString().split('T')[0] },
+    end: hasTime ? { dateTime: new Date(due.getTime()+3600000).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone } : { date: due.toISOString().split('T')[0] },
+    recurrence: ['RRULE:FREQ=DAILY;UNTIL=' + due.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z'],
+    reminders: { useDefault: false, overrides }
+  };
+  try {
+    toast('Syncing to Google Calendar...');
+    const url = task.calEventId
+      ? 'https://www.googleapis.com/calendar/v3/calendars/primary/events/' + task.calEventId
+      : 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+    const res = await fetch(url, { method: task.calEventId?'PUT':'POST', headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'}, body: JSON.stringify(event) });
+    if (!res.ok) { const e=await res.json(); throw new Error(e.error?.message||'Calendar error'); }
+    const created = await res.json();
+    task.calEventId = created.id;
+    if (al.pastDue && task.status !== 'done') {
+      const nd = new Date(due); nd.setDate(nd.getDate()+1);
+      const pdEvent = { summary: '⚠ PAST DUE: ' + task.title, description: 'Project: ' + p.name, start:{date:nd.toISOString().split('T')[0]}, end:{date:nd.toISOString().split('T')[0]}, recurrence:['RRULE:FREQ=DAILY;COUNT=30'], reminders:{useDefault:false,overrides:[{method:'popup',minutes:0}]} };
+      const pr = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', { method:'POST', headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'}, body:JSON.stringify(pdEvent) });
+      if (pr.ok) { const pd=await pr.json(); task.calPastDueEventId=pd.id; }
+    }
+    await driveWrite(p, p.fileId);
+    renderTaskList();
+    toast('Synced to Calendar ✓', 'success');
+  } catch(e) { toast('Calendar sync failed: ' + e.message, 'error'); console.error(e); }
+}
+
+async function unsyncCalendar(taskId) {
+  if (!accessToken) return;
+  const p = currentProject();
+  const task = (p.tasks||[]).find(t=>t.id===taskId);
+  if (!task?.calEventId) return;
+  try {
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+task.calEventId, { method:'DELETE', headers:{'Authorization':'Bearer '+accessToken} });
+    if (task.calPastDueEventId) {
+      await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+task.calPastDueEventId, { method:'DELETE', headers:{'Authorization':'Bearer '+accessToken} });
+      delete task.calPastDueEventId;
+    }
+    delete task.calEventId;
+    await driveWrite(p, p.fileId);
+    renderTaskList();
+    toast('Removed from Calendar');
+  } catch(e) { toast('Failed: ' + e.message, 'error'); }
+}
+
+// ── SYNC PROJECT TO SIDEBAR ──
+function syncProjectToSidebar(p) {
+  if (currentProjectType === 'personal') renderPersonalSidebar();
+  else renderOrgSidebar();
+}
+
+// ═══════════════════════════════════════════════════
+// ASSIGNED TO ME
+// ═══════════════════════════════════════════════════
+async function loadAssignedToMe() {
+  showView('assigned');
+  const content = document.getElementById('atm-content');
+  content.innerHTML = '<div class="loading"><div class="spin"></div> Scanning for your assignments...</div>';
+  atmGroups = [];
+  atmExpanded = {};
+  const myEmail = currentUser.email;
+
+  // Personal projects
+  for (const p of personalProjects) {
+    const mine = (p.tasks||[]).filter(t=>(t.assignees||[]).some(a=>a===myEmail||a===currentUser.name||peopleList.find(x=>x.key===a)?.email===myEmail));
+    if (mine.length) atmGroups.push({ projectName: p.name, source: p.sharedFromEmail?'Shared by '+p.sharedFromEmail:'Personal', colorHex: p.colorHex||'#38bdf8', tasks: mine, fileId: p.fileId });
+  }
+
+  // Org projects
+  for (const org of orgs) {
+    if (!org.projects) {
+      if (!org.projectsFolderId) continue;
+      const files = await driveList("'"+org.projectsFolderId+"' in parents and mimeType='application/json' and trashed=false");
+      org.projects = [];
+      for (const f of files) {
+        const d = await driveRead(f.id);
+        if (d && d.type==='org_project') {
+          const canSee = d.visibility==='public'||org.myRole==='admin'||org.myRole==='owner'||(d.collaborators||[]).includes(myEmail);
+          if (canSee) org.projects.push({...d,fileId:f.id});
+        }
+      }
+    }
+    for (const p of (org.projects||[])) {
+      const mine = (p.tasks||[]).filter(t=>(t.assignees||[]).some(a=>a===myEmail||peopleList.find(x=>x.key===a)?.email===myEmail));
+      if (mine.length) atmGroups.push({ projectName: p.name, source: org.name, colorHex: p.colorHex||'#38bdf8', tasks: mine, fileId: p.fileId });
+    }
+  }
+
+  const total = atmGroups.reduce((s,g)=>s+g.tasks.length,0);
+  const sub = document.getElementById('atm-sub');
+  if (sub) sub.textContent = total + ' task' + (total!==1?'s':'') + ' assigned to you across ' + atmGroups.length + ' project' + (atmGroups.length!==1?'s':'');
+
+  if (!atmGroups.length) {
+    content.innerHTML = '<div class="empty"><div class="empty-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17 12h-5v5h5v-5zM16 1v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2h-1V1h-2zm3 18H5V8h14v11z"/></svg></div><h3>Nothing assigned to you</h3><p>Tasks assigned to you across all projects will appear here.</p></div>';
+    return;
+  }
+  content.innerHTML = atmGroups.map((g,i)=>renderAtmGroup(g,i)).join('');
+}
+
+function renderAtmGroup(g, idx) {
+  const done = g.tasks.filter(t=>t.status==='done').length;
+  const total = g.tasks.length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const isOpen = !!atmExpanded[idx];
+  const now = new Date();
+  let taskRows = '';
+  if (isOpen) {
+    const rows = g.tasks.map(t => {
+      const sc = t.status==='todo'?'status-todo':t.status==='progress'?'status-prog':'status-done';
+      const assignees = t.assignees || [];
+      const notes = t.notes || [];
+      let meta = ['Added ' + new Date(t.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})];
+      if (t.dueDate) { const d=new Date(t.dueDate); const od=d<now&&t.status!=='done'; meta.push((od?'<span class="task-meta-badge overdue">':'<span class="task-meta-badge">')+'📅 '+d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(od?' · PAST DUE':'')+'</span>'); }
+      if (notes.length) meta.push('<span class="task-meta-badge">📝 '+notes.length+' note'+(notes.length!==1?'s':'')+'</span>');
+      if (assignees.length) meta.push('<span class="task-meta-badge">👤 '+assignees.map(e=>{const px=peopleList.find(x=>x.key===e||x.email===e||x.name===e);return esc(px?px.name.split(' ')[0]:e.split('@')[0]);}).join(', ')+'</span>');
+      const isPanelOpen = !!atmExpanded[idx+'_'+t.id];
+      const panelHtml = isPanelOpen ? buildAtmTaskPanel(t, g, idx) : '';
+      const chkClass = 'task-chk' + (t.status==='done'?' checked':'');
+      const expClass = 'expand-icon' + (isPanelOpen?' open':'');
+      return '<div class="task-row'+(t.status==='done'?' done':'')+'" style="margin-bottom:4px">' +
+        '<div class="task-row-main">' +
+          '<div class="'+chkClass+'" data-gidx="'+idx+'" data-tid="'+esc(t.id)+'" onclick="atmToggleChk(this)">' +
+            '<svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>' +
+          '</div>' +
+          '<div class="task-body" data-gidx="'+idx+'" data-tid="'+esc(t.id)+'" onclick="atmTogglePanel(this)" style="cursor:pointer">' +
+            '<div class="task-title">'+esc(t.title)+'</div>' +
+            '<div class="task-meta">'+meta.join(' · ')+'</div>' +
+          '</div>' +
+          '<div class="task-row-actions">' +
+            '<select class="status-sel '+sc+'" data-gidx="'+idx+'" data-tid="'+esc(t.id)+'" onchange="atmStatusChange(this)" onclick="event.stopPropagation()">' +
+              '<option value="todo"'+(t.status==='todo'?' selected':'')+'>To Do</option>' +
+              '<option value="progress"'+(t.status==='progress'?' selected':'')+'>In Progress</option>' +
+              '<option value="done"'+(t.status==='done'?' selected':'')+'>Complete</option>' +
+            '</select>' +
+            '<svg class="'+expClass+'" viewBox="0 0 24 24" data-gidx="'+idx+'" data-tid="'+esc(t.id)+'" onclick="atmTogglePanel(this)" style="cursor:pointer;width:14px;height:14px;fill:var(--text3)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>' +
+          '</div>' +
+        '</div>' +
+        panelHtml +
+      '</div>';
+    });
+    taskRows = '<div class="atm-tasks">' + rows.join('') + '</div>';
+  }
+  return '<div class="atm-card" id="atm-'+idx+'">' +
+    '<div class="atm-header" data-gidx="'+idx+'" onclick="atmToggleGroup(this)">' +
+      '<div class="atm-bar" style="background:'+esc(g.colorHex)+'"></div>' +
+      '<div class="atm-info">' +
+        '<div class="atm-proj-name">'+esc(g.projectName)+'</div>' +
+        '<div class="atm-source">'+esc(g.source)+' · '+total+' task'+(total!==1?'s':'')+' assigned to you</div>' +
+      '</div>' +
+      '<div class="atm-stats">' +
+        '<div class="atm-mini-bar"><div class="atm-mini-fill" style="width:'+pct+'%;background:'+esc(g.colorHex)+'"></div></div>' +
+        '<span class="atm-pct">'+pct+'%</span>' +
+      '</div>' +
+      '<svg class="atm-chevron'+(isOpen?' open':'')+'" viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text3);transition:transform 0.2s"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>' +
+    '</div>' +
+    taskRows +
+  '</div>';
+}
+
+// Data-attribute driven event handlers for ATM (avoids quoting nightmares)
+function atmToggleChk(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmToggle(gi,tid); }
+function atmTogglePanel(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; toggleAtmTaskPanel(gi,tid); }
+function atmStatusChange(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmSetStatus(gi,tid,el.value); }
+function atmToggleGroup(el) { const gi=parseInt(el.dataset.gidx); toggleAtmGroup(gi); }
+
+
+function buildAtmTaskPanel(task, g, groupIdx) {
+  const notes = task.notes || [];
+  const hasDue = !!task.dueDate;
+  const assignees = task.assignees || [];
+  const isSynced = !!task.calEventId;
+  let html = '<div class="task-panel">';
+
+  // Notes
+  html += '<div class="panel-section"><div class="panel-label">Notes & Updates</div>';
+  html += '<div class="notes-log">';
+  html += notes.length ? notes.map(n=>'<div class="note-entry"><div class="note-ts">'+new Date(n.ts).toLocaleString()+'</div><div class="note-text">'+esc(n.text)+'</div></div>').join('') : '<div style="font-size:13px;color:var(--text3);padding:6px 0">No notes yet.</div>';
+  html += '</div>';
+  html += '<div class="note-add"><textarea class="note-textarea" id="atmnote-'+groupIdx+'-'+task.id+'" placeholder="Add an update..."></textarea>';
+  html += '<button class="btn btn-primary btn-sm" data-gidx="'+groupIdx+'" data-tid="'+esc(task.id)+'" onclick="atmAddNoteBtn(this)">Add</button></div>';
+  html += '</div>';
+
+  // Due date
+  if (hasDue) {
+    const due = new Date(task.dueDate);
+    const isOD = due < new Date() && task.status !== 'done';
+    const fmtDue = due.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    html += '<div class="panel-section"><div class="panel-label">Due Date</div>';
+    html += '<div class="due-row"><span class="task-meta-badge'+(isOD?' overdue':'')+'">📅 '+fmtDue+(isOD?' · PAST DUE':'')+'</span></div></div>';
+  }
+
+  // Assignees (read-only in ATM)
+  html += '<div class="panel-section"><div class="panel-label">Assigned To</div>';
+  html += '<div class="assignee-chips">';
+  if (assignees.length) {
+    html += assignees.map(e => {
+      const px = peopleList.find(x=>x.key===e||x.email===e||x.name===e);
+      return '<span class="assignee-chip">'+esc(px?px.name:e)+'</span>';
+    }).join('');
+  } else {
+    html += '<span style="font-size:12px;color:var(--text3)">Nobody assigned</span>';
+  }
+  html += '</div></div>';
+
+  // Calendar
+  html += '<div class="panel-section"><div class="panel-label">Calendar</div>';
+  html += '<div class="panel-actions">';
+  if (hasDue) {
+    html += '<button class="btn-xs '+(isSynced?'active':'')+'" data-gidx="'+groupIdx+'" data-tid="'+esc(task.id)+'" onclick="atmSyncBtn(this)">';
+    html += '<svg viewBox="0 0 24 24" fill="currentColor" style="width:11px;height:11px"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>';
+    html += (isSynced?'✓ Synced to Calendar':'Sync to Calendar')+'</button>';
+  } else {
+    html += '<span style="font-size:12px;color:var(--text3)">Set a due date first to sync</span>';
+  }
+  html += '</div></div>';
+
+  html += '</div>';
+  return html;
+}
+
+function toggleAtmTaskPanel(groupIdx, taskId) {
+  const key = groupIdx + '_' + taskId;
+  atmExpanded[key] = !atmExpanded[key];
+  const card = document.getElementById('atm-' + groupIdx);
+  if (card) card.outerHTML = renderAtmGroup(atmGroups[groupIdx], groupIdx);
+}
+
+async function atmAddNote(groupIdx, taskId) {
+  const g = atmGroups[groupIdx];
+  if (!g) return;
+  const task = g.tasks.find(t=>t.id===taskId);
+  if (!task) return;
+  const input = document.getElementById('atmnote-'+groupIdx+'-'+taskId);
+  const text = input ? input.value.trim() : '';
+  if (!text) return;
+  if (!task.notes) task.notes = [];
+  task.notes.push({ ts: new Date().toISOString(), text });
+  if (input) input.value = '';
+  await atmWriteBack(g, taskId, task);
+  const card = document.getElementById('atm-' + groupIdx);
+  if (card) card.outerHTML = renderAtmGroup(g, groupIdx);
+  toast('Note added');
+}
+
+async function atmSyncCalendar(groupIdx, taskId) {
+  const g = atmGroups[groupIdx];
+  if (!g) return;
+  const task = g.tasks.find(t=>t.id===taskId);
+  if (!task || !task.dueDate) { toast('Set a due date first', 'error'); return; }
+  const savedType = currentProjectType;
+  const savedPersonal = currentPersonalProject;
+  const savedOrg2 = currentOrgProject;
+  const savedOrg3 = currentOrg;
+  let sourceProj = personalProjects.find(p=>p.fileId===g.fileId);
+  if (sourceProj) { currentProjectType = 'personal'; currentPersonalProject = sourceProj; }
+  else {
+    for (const org of orgs) {
+      const op = (org.projects||[]).find(p=>p.fileId===g.fileId);
+      if (op) { currentProjectType = 'org'; currentOrgProject = op; currentOrg = org; break; }
+    }
+  }
+  await syncToCalendar(taskId);
+  currentProjectType = savedType; currentPersonalProject = savedPersonal; currentOrgProject = savedOrg2; currentOrg = savedOrg3;
+  const card = document.getElementById('atm-' + groupIdx);
+  if (card) card.outerHTML = renderAtmGroup(g, groupIdx);
+}
+
+function atmAddNoteBtn(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmAddNote(gi,tid); }
+
+
+// ═══════════════════════════════════════════════════
+// PROJECT CARD RENDERING
+// ═══════════════════════════════════════════════════
+function renderProjCard(p, type) {
+  const tasks = p.tasks || [];
+  const total = tasks.length;
+  const done = tasks.filter(t=>t.status==='done').length;
+  const prog = tasks.filter(t=>t.status==='progress').length;
+  const todo = tasks.filter(t=>t.status==='todo').length;
+  const pct = total ? Math.round(done/total*100) : 0;
+  const onclick = type==='personal' ? "openPersonalProject('"+p.id+"')" : "openOrgProject('"+p.id+"')";
+  return `<div class="proj-card" onclick="${onclick}">
+    <div class="proj-card-bar" style="background:${p.colorHex}"></div>
+    <h3>${esc(p.name)}${p.visibility==='hidden'?'<span class="lock-badge">hidden</span>':''}</h3>
+    <div class="proj-card-desc">${esc(p.description||'')}</div>
+    <div class="proj-badges">
+      ${todo?'<span class="badge badge-todo">'+todo+' to do</span>':''}
+      ${prog?'<span class="badge badge-prog">'+prog+' in progress</span>':''}
+      ${done?'<span class="badge badge-done">'+done+' done</span>':''}
+      ${!total?'<span class="badge badge-neutral">No tasks</span>':''}
+    </div>
+    ${total?'<div class="proj-prog-bar"><div class="proj-prog-fill" style="width:'+pct+'%;background:'+p.colorHex+'"></div></div>':''}
+  </div>`;
+}
+
+function sortProjects(arr, sort) {
+  return arr.sort((a,b) => {
+    if (sort==='alpha') return a.name.localeCompare(b.name);
+    if (sort==='created') return new Date(a.createdAt)-new Date(b.createdAt);
+    if (sort==='progress') {
+      const pct = p => { const t=(p.tasks||[]).length; return t?((p.tasks||[]).filter(x=>x.status==='done').length/t):0; };
+      return pct(b)-pct(a);
+    }
+    return new Date(b.modifiedAt||b.createdAt)-new Date(a.modifiedAt||a.createdAt);
+  });
+}
+
+// ═══════════════════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════════════════
+function openModal(id) { document.getElementById(id)?.classList.remove('hidden'); }
+function closeModal(id) { document.getElementById(id)?.classList.add('hidden'); }
+
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if (e.target === el) el.classList.add('hidden'); });
+});
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function hashStr(s) { let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return h; }
+
+let _toastTimer;
+function toast(msg, type='') {
+  clearTimeout(_toastTimer);
+  document.querySelectorAll('.toast').forEach(t=>t.remove());
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = (type==='success'?'✓ ':type==='error'?'✕ ':'ℹ ') + msg;
+  document.body.appendChild(el);
+  _toastTimer = setTimeout(()=>el.remove(), 3500);
+}
+
+function toggleAtmGroup(idx) {
+  atmExpanded[idx] = !atmExpanded[idx];
+  const card = document.getElementById('atm-' + idx);
+  if (card) card.outerHTML = renderAtmGroup(atmGroups[idx], idx);
+}
+
+function atmSyncBtn(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmSyncCalendar(gi,tid); }
+
+// Settings view initialization
+document.getElementById('sbi-settings')?.addEventListener('click', () => {
+  loadAlertSettingsUI();
+  renderPeopleSettings();
+});
+</script>
+</body>
+</html>
