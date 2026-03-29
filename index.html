@@ -5,12 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f172a">
 <meta name="mobile-web-app-capable" content="yes">
-<title>FlowBoard</title>
+<title>Taskie</title>
 <link rel="manifest" href="manifest.json">
 <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://apis.google.com/js/api.js" data-cfasync="false"></script>
 <script src="https://accounts.google.com/gsi/client" data-cfasync="false"></script>
 <style>
+/* Retro gradient for logo */
+.taskie-logo-svg { display:block; }
+/* Retro theme font overrides */
+[data-theme="retro"] .auth-card h1 span { color: #e8502a; -webkit-text-fill-color: #e8502a; background: none; }
+[data-theme="retro"] .btn-primary { background: #e8502a; color: #f5f0e8; }
+[data-theme="retro"] .btn-primary:hover { background: #c93d1e; box-shadow: 0 0 16px rgba(232,80,42,0.4); }
+[data-theme="retro"] .sb-item.active { background: rgba(94,196,180,0.15); color: #5ec4b4; }
+[data-theme="retro"] .filter-btn.active { background: rgba(94,196,180,0.15); color: #5ec4b4; border-color: #5ec4b4; }
+[data-theme="retro"] .task-chk.checked { background: #e8502a; border-color: #e8502a; }
+[data-theme="retro"] .progress-fill { background: linear-gradient(90deg, #5ec4b4, #e8502a, #f0a830); }
+[data-theme="retro"] .ws-btn.active { background: rgba(94,196,180,0.15); color: #5ec4b4; }
+[data-theme="retro"] .assignee-chip { background: rgba(94,196,180,0.15); color: #5ec4b4; }
+[data-theme="retro"] .note-entry { background: #243968; border-left: 3px solid #5ec4b4; border-radius: 0; }
+[data-theme="retro"] .proj-card { border-left: 4px solid #e8502a; }
+[data-theme="retro"] .modal { border-color: rgba(94,196,180,0.25); }
+[data-theme="retro"] ::-webkit-scrollbar-thumb { background: #5e8a85; }
+[data-theme="retro"] .status-todo { background: rgba(94,196,180,0.15); color: #5ec4b4; }
+[data-theme="retro"] .status-prog { background: rgba(232,80,42,0.15); color: #e8502a; }
+[data-theme="retro"] .status-done { background: rgba(240,168,48,0.15); color: #f0a830; }
 /* ══════════════════════════════════════════
    THEME SYSTEM
 ══════════════════════════════════════════ */
@@ -83,7 +102,26 @@
   --input-bg: #2e3448;
 }
 
-/* ── RESET ── */
+/* RETRO THEME — 70s stripe palette (navy, teal, cream, red-orange, amber) */
+[data-theme="retro"] {
+  --bg: #1a2744;
+  --bg2: #1e3056;
+  --bg3: #243968;
+  --surface: #1e3056;
+  --border: rgba(94,196,180,0.2);
+  --border2: rgba(94,196,180,0.38);
+  --text: #f5f0e8;
+  --text2: #9dd4cc;
+  --text3: #5e8a85;
+  --accent: #e8502a;
+  --accent-bg: rgba(232,80,42,0.18);
+  --accent-glow: rgba(232,80,42,0.3);
+  --sidebar-bg: #16213a;
+  --input-bg: #243968;
+  --todo-c: #5ec4b4; --todo-bg: rgba(94,196,180,0.15);
+  --prog-c: #e8502a; --prog-bg: rgba(232,80,42,0.15);
+  --done-c: #f0a830; --done-bg: rgba(240,168,48,0.15);
+}
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background 0.2s,color 0.2s}
 a{color:var(--accent);text-decoration:none}
@@ -447,8 +485,22 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 <!-- ══ AUTH ══ -->
 <div id="screen-auth" class="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></div>
-    <h1>Flow<span>Board</span></h1>
+    <div class="auth-logo" style="background:none;padding:0;width:64px;height:64px"><svg class="taskie-logo-svg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="retro-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5ec4b4"/>
+      <stop offset="45%" stop-color="#e8502a"/>
+      <stop offset="100%" stop-color="#f0a830"/>
+    </linearGradient>
+    <linearGradient id="retro-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a2744"/>
+      <stop offset="100%" stop-color="#243968"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#retro-bg)"/>
+  <text x="16" y="23" text-anchor="middle" font-family="'Courier New',Courier,monospace" font-size="21" font-weight="bold" fill="url(#retro-grad)" letter-spacing="0">T</text>
+</svg></div>
+    <h1>Task<span>ie</span></h1>
     <p>Project management powered by your Google Drive.<br>Free forever. Your data stays yours.</p>
     <button class="btn-google" onclick="signIn()">
       <img src="https://www.google.com/favicon.ico" alt="">
@@ -462,7 +514,7 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 <div id="screen-setup" class="auth-screen hidden">
   <div class="setup-card">
     <h2>Connect to Google</h2>
-    <p>FlowBoard needs a Google OAuth Client ID. This is free and takes about 10 minutes to set up once.</p>
+    <p>Taskie needs a Google OAuth Client ID. This is free and takes about 10 minutes to set up once.</p>
     <div class="setup-steps">
       <strong>How to get your Client ID:</strong><br>
       1. Go to <a href="https://console.cloud.google.com" target="_blank">console.cloud.google.com</a> → create a project<br>
@@ -485,8 +537,22 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
   <!-- SIDEBAR -->
   <nav class="sidebar">
     <div class="sb-head">
-      <div class="sb-logo"><svg viewBox="0 0 24 24"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg></div>
-      <span class="sb-appname">FlowBoard</span>
+      <div class="sb-logo" style="background:none;padding:0;width:34px;height:34px"><svg class="taskie-logo-svg" viewBox="0 0 32 32" width="34" height="34" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="retro-grad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5ec4b4"/>
+      <stop offset="45%" stop-color="#e8502a"/>
+      <stop offset="100%" stop-color="#f0a830"/>
+    </linearGradient>
+    <linearGradient id="retro-bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1a2744"/>
+      <stop offset="100%" stop-color="#243968"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="7" fill="url(#retro-bg)"/>
+  <text x="16" y="23" text-anchor="middle" font-family="'Courier New',Courier,monospace" font-size="21" font-weight="bold" fill="url(#retro-grad)" letter-spacing="0">T</text>
+</svg></div>
+      <span class="sb-appname">Taskie</span>
     </div>
 
     <!-- Workspace switcher -->
@@ -628,6 +694,10 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
               <div class="theme-option" id="theme-slate" onclick="setTheme('slate')">
                 <div class="theme-preview" style="background:linear-gradient(135deg,#1a1f2e,#7c3aed)"></div>
                 <div class="theme-name">Slate</div>
+              </div>
+              <div class="theme-option" id="theme-retro" onclick="setTheme('retro')">
+                <div class="theme-preview" style="background:linear-gradient(135deg,#1a2744 0%,#5ec4b4 40%,#e8502a 70%,#f0a830 100%)"></div>
+                <div class="theme-name">Retro 70s</div>
               </div>
             </div>
           </div>
@@ -870,7 +940,7 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 <div id="modal-create-org" class="modal-overlay hidden">
   <div class="modal">
     <h3>Create Organization</h3>
-    <div class="modal-info"><strong>Tip:</strong> Use a dedicated Google account (e.g. acmecorp.flowboard@gmail.com) so the org isn't tied to one person.</div>
+    <div class="modal-info"><strong>Tip:</strong> Use a dedicated Google account (e.g. acmecorp.taskie@gmail.com) so the org isn't tied to one person.</div>
     <div class="form-field"><label>Organization Name *</label><input type="text" id="co-name" placeholder="e.g. Acme Corp"></div>
     <div class="form-field"><label>Description</label><input type="text" id="co-desc" placeholder="What does your org do?"></div>
     <div class="modal-actions">
@@ -925,7 +995,7 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 <div id="modal-share" class="modal-overlay hidden">
   <div class="modal">
     <h3>Share Project</h3>
-    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Invite someone — they'll get a link. When they click it and sign in, the project appears in their FlowBoard.</p>
+    <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Invite someone — they'll get a link. When they click it and sign in, the project appears in their Taskie.</p>
     <div class="form-field"><label>Email Address</label><input type="email" id="share-email" placeholder="friend@gmail.com"></div>
     <div id="share-current" style="margin-bottom:12px"></div>
     <div class="modal-info" style="font-size:12px">This opens Gmail with a pre-written invite. Just hit Send.</div>
@@ -961,13 +1031,13 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
     <h3>Transfer Org Ownership</h3>
     <div class="modal-info">
       <strong>How this works:</strong><br><br>
-      FlowBoard stores org data in the Google Drive of whoever originally created the org. Transferring ownership has two parts:<br><br>
+      Taskie stores org data in the Google Drive of whoever originally created the org. Transferring ownership has two parts:<br><br>
       <strong>Step 1 — Role transfer (automatic):</strong> The new owner gets the Owner role. You become an Admin and stay in the org.<br><br>
       <strong>Step 2 — Drive data transfer (manual, recommended):</strong><br>
       We'll grant the new owner full access to all org files. To fully move the data to their Drive:<br>
-      1. Ask the new owner to sign into <a href="https://drive.google.com" target="_blank">Google Drive</a> and find the <strong>FlowBoard_Orgs</strong> folder shared with them<br>
+      1. Ask the new owner to sign into <a href="https://drive.google.com" target="_blank">Google Drive</a> and find the <strong>Taskie_Orgs</strong> folder shared with them<br>
       2. They right-click it → <strong>Make a copy</strong> (or Add shortcut to Drive)<br>
-      3. Verify FlowBoard still works correctly for all members<br>
+      3. Verify Taskie still works correctly for all members<br>
       4. You can then remove the original folder from your Drive if desired<br><br>
       <strong style="color:var(--warn)">⚠ Do not delete the original until the new owner confirms everything is working.</strong>
     </div>
@@ -1027,15 +1097,15 @@ const SCOPES = [
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile'
 ].join(' ');
-const FOLDER_NAME = 'FlowBoard_Data';
-const ORG_FOLDER_NAME = 'FlowBoard_Orgs';
+const FOLDER_NAME = 'Taskie_Data';
+const ORG_FOLDER_NAME = 'Taskie_Orgs';
 const COLORS = ['c1','c2','c3','c4','c5','c6'];
 const COLOR_HEX = ['#38bdf8','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899'];
 
 // ═══════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════
-let CLIENT_ID = HARDCODED_CLIENT_ID || localStorage.getItem('fb_client_id') || '';
+let CLIENT_ID = HARDCODED_CLIENT_ID || localStorage.getItem('taskie_client_id') || '';
 let accessToken = null;
 let currentUser = null;
 let tokenClient = null;
@@ -1059,13 +1129,13 @@ let currentFilter = 'all';
 let openTaskPanelId = null;
 
 // Settings
-let settings = JSON.parse(localStorage.getItem('fb_settings') || 'null') || {
+let settings = JSON.parse(localStorage.getItem('taskie_settings') || 'null') || {
   theme: 'dark',
   alerts: { due: true, dueMins: 60, daily: false, dailyTime: '09:00', pastDue: true, pastDueTime: '09:00', email: false, emailMins: 1440 }
 };
 
 // People list (for task assignment autocomplete)
-let peopleList = JSON.parse(localStorage.getItem('fb_people') || '[]');
+let peopleList = JSON.parse(localStorage.getItem('taskie_people') || '[]');
 
 // ATM cache
 let atmGroups = [];
@@ -1153,7 +1223,7 @@ function saveClientId() {
   const id = document.getElementById('setup-client-id').value.trim();
   if (!id) { toast('Enter a Client ID', 'error'); return; }
   CLIENT_ID = id;
-  localStorage.setItem('fb_client_id', id);
+  localStorage.setItem('taskie_client_id', id);
   showScreen('auth');
   initGAPI();
 }
@@ -1204,7 +1274,7 @@ function applyTheme(t) {
   document.querySelectorAll('.theme-option').forEach(el => {
     el.classList.toggle('active', el.id === 'theme-' + t);
   });
-  localStorage.setItem('fb_settings', JSON.stringify(settings));
+  localStorage.setItem('taskie_settings', JSON.stringify(settings));
 }
 
 function setTheme(t) { applyTheme(t); }
@@ -1220,7 +1290,7 @@ function saveGlobalAlerts() {
     email: document.getElementById('al-email').checked,
     emailMins: parseInt(document.getElementById('al-email-mins').value)
   };
-  localStorage.setItem('fb_settings', JSON.stringify(settings));
+  localStorage.setItem('taskie_settings', JSON.stringify(settings));
   toast('Alert defaults saved', 'success');
 }
 
@@ -1249,7 +1319,7 @@ function addPersonToList(name, email) {
 
 function savePeopleList() {
   peopleList.sort((a,b) => a.name.localeCompare(b.name));
-  localStorage.setItem('fb_people', JSON.stringify(peopleList));
+  localStorage.setItem('taskie_people', JSON.stringify(peopleList));
 }
 
 function removePerson(key) {
@@ -1476,8 +1546,8 @@ async function sendShareInvite() {
   try { await driveShare(currentPersonalProject.fileId, email, 'reader'); } catch(e) {}
   const siteUrl = window.location.origin + window.location.pathname;
   const inviteLink = siteUrl + '?invite=' + token;
-  const subject = encodeURIComponent(currentUser.name + ' shared a FlowBoard project with you');
-  const body = encodeURIComponent('Hi,\n\n' + currentUser.name + ' has shared "' + currentPersonalProject.name + '" with you on FlowBoard.\n\nClick to view: ' + inviteLink + '\n\nSign in with your Google account (' + email + ') to access it.\n\nLink expires in 7 days.\n\n— FlowBoard');
+  const subject = encodeURIComponent(currentUser.name + ' shared a Taskie project with you');
+  const body = encodeURIComponent('Hi,\n\n' + currentUser.name + ' has shared "' + currentPersonalProject.name + '" with you on Taskie.\n\nClick to view: ' + inviteLink + '\n\nSign in with your Google account (' + email + ') to access it.\n\nLink expires in 7 days.\n\n— Taskie');
   window.open('https://mail.google.com/mail/?view=cm&to=' + encodeURIComponent(email) + '&su=' + subject + '&body=' + body, '_blank');
   closeModal('modal-share');
   toast('Gmail opened with invite', 'success');
@@ -1525,18 +1595,18 @@ function checkInviteToken() {
   if (!token) return;
   try {
     const data = JSON.parse(atob(token + '=='));
-    localStorage.setItem('fb_pending_invite', JSON.stringify(data));
+    localStorage.setItem('taskie_pending_invite', JSON.stringify(data));
     window.history.replaceState({}, '', window.location.pathname);
     toast('Invite detected — sign in to accept', 'success');
   } catch(e) {}
 }
 
 async function checkPendingInvite() {
-  const raw = localStorage.getItem('fb_pending_invite');
+  const raw = localStorage.getItem('taskie_pending_invite');
   if (!raw) return;
   try {
     const data = JSON.parse(raw);
-    localStorage.removeItem('fb_pending_invite');
+    localStorage.removeItem('taskie_pending_invite');
     const project = await driveRead(data.fileId);
     if (!project) { toast('Invite link expired or invalid', 'error'); return; }
     if (!personalProjects.find(p=>p.id===project.id)) {
@@ -1553,7 +1623,7 @@ async function checkPendingInvite() {
 // ORGANIZATIONS
 // ═══════════════════════════════════════════════════
 async function loadOrgs() {
-  const files = await driveList(`mimeType='application/json' and name contains 'fb_org_' and trashed=false`);
+  const files = await driveList(`mimeType='application/json' and name contains 'taskie_org_' and trashed=false`);
   orgs = [];
   for (const f of files) {
     const d = await driveRead(f.id);
@@ -1717,7 +1787,7 @@ async function createOrg() {
     createdAt: new Date().toISOString(), createdBy: currentUser.email,
     alerts: { due: true, dueMins: 60, pastDue: true, pastDueTime: '09:00' }
   };
-  const fileId = await driveWrite(meta, null, thisFolderId, 'fb_org_' + meta.id + '.json');
+  const fileId = await driveWrite(meta, null, thisFolderId, 'taskie_org_' + meta.id + '.json');
   meta.fileId = fileId; meta.myRole = 'owner';
   orgs.unshift(meta);
   closeModal('modal-create-org');
@@ -2450,6 +2520,51 @@ async function unassign(taskId, personKey) {
 }
 
 // ── CALENDAR ──
+// ── CALENDAR MANAGEMENT ──
+// calendarIds stored in localStorage: { personal: 'cal_id', orgs: { orgId: 'cal_id' } }
+let taskieCalendars = JSON.parse(localStorage.getItem('taskie_calendars') || '{}');
+
+async function getOrCreateCalendar(calKey, calName) {
+  // Check if we have a stored calendar ID
+  if (taskieCalendars[calKey]) {
+    // Verify it still exists
+    try {
+      const check = await fetch('https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(taskieCalendars[calKey]), {
+        headers: { 'Authorization': 'Bearer ' + accessToken }
+      });
+      if (check.ok) return taskieCalendars[calKey];
+    } catch(e) {}
+  }
+  // Create new calendar
+  try {
+    const res = await fetch('https://www.googleapis.com/calendar/v3/calendars', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ summary: calName, description: 'Created by Taskie — taskie project management', timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone })
+    });
+    if (!res.ok) throw new Error('Could not create calendar');
+    const cal = await res.json();
+    taskieCalendars[calKey] = cal.id;
+    localStorage.setItem('taskie_calendars', JSON.stringify(taskieCalendars));
+    toast('Created calendar: ' + calName, 'success');
+    return cal.id;
+  } catch(e) {
+    console.error('Calendar create error:', e);
+    return 'primary'; // fallback to primary
+  }
+}
+
+async function getCalendarIdForCurrentProject() {
+  if (currentProjectType === 'personal') {
+    return await getOrCreateCalendar('personal', 'Taskie - My Projects');
+  } else if (currentOrg) {
+    const key = 'org_' + currentOrg.id;
+    const name = 'Taskie - ' + currentOrg.name;
+    return await getOrCreateCalendar(key, name);
+  }
+  return 'primary';
+}
+
 async function syncToCalendar(taskId) {
   if (!accessToken) { toast('Sign in required', 'error'); return; }
   const p = currentProject();
@@ -2463,7 +2578,7 @@ async function syncToCalendar(taskId) {
   if (al.due) overrides.push({ method:'popup', minutes: al.dueMins });
   if (al.email) overrides.push({ method:'email', minutes: al.emailMins });
   const event = {
-    summary: task.title + ' — FlowBoard',
+    summary: task.title + ' — Taskie',
     description: 'Project: ' + p.name + (task.notes?.length ? '\n\nLatest note: ' + task.notes[task.notes.length-1].text : ''),
     start: hasTime ? { dateTime: due.toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone } : { date: due.toISOString().split('T')[0] },
     end: hasTime ? { dateTime: new Date(due.getTime()+3600000).toISOString(), timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone } : { date: due.toISOString().split('T')[0] },
@@ -2471,18 +2586,20 @@ async function syncToCalendar(taskId) {
     reminders: { useDefault: false, overrides }
   };
   try {
-    toast('Syncing to Google Calendar...');
+    toast('Setting up Taskie calendar...');
+    const calId = await getCalendarIdForCurrentProject();
     const url = task.calEventId
-      ? 'https://www.googleapis.com/calendar/v3/calendars/primary/events/' + task.calEventId
-      : 'https://www.googleapis.com/calendar/v3/calendars/primary/events';
+      ? 'https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(calId) + '/events/' + task.calEventId
+      : 'https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(calId) + '/events';
     const res = await fetch(url, { method: task.calEventId?'PUT':'POST', headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'}, body: JSON.stringify(event) });
     if (!res.ok) { const e=await res.json(); throw new Error(e.error?.message||'Calendar error'); }
     const created = await res.json();
     task.calEventId = created.id;
+    task.calCalendarId = calId;
     if (al.pastDue && task.status !== 'done') {
       const nd = new Date(due); nd.setDate(nd.getDate()+1);
       const pdEvent = { summary: '⚠ PAST DUE: ' + task.title, description: 'Project: ' + p.name, start:{date:nd.toISOString().split('T')[0]}, end:{date:nd.toISOString().split('T')[0]}, recurrence:['RRULE:FREQ=DAILY;COUNT=30'], reminders:{useDefault:false,overrides:[{method:'popup',minutes:0}]} };
-      const pr = await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events', { method:'POST', headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'}, body:JSON.stringify(pdEvent) });
+      const pr = await fetch('https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(calId) + '/events', { method:'POST', headers:{'Authorization':'Bearer '+accessToken,'Content-Type':'application/json'}, body:JSON.stringify(pdEvent) });
       if (pr.ok) { const pd=await pr.json(); task.calPastDueEventId=pd.id; }
     }
     await driveWrite(p, p.fileId);
@@ -2496,13 +2613,15 @@ async function unsyncCalendar(taskId) {
   const p = currentProject();
   const task = (p.tasks||[]).find(t=>t.id===taskId);
   if (!task?.calEventId) return;
+  const calId = task.calCalendarId || 'primary';
   try {
-    await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+task.calEventId, { method:'DELETE', headers:{'Authorization':'Bearer '+accessToken} });
+    await fetch('https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(calId) + '/events/'+task.calEventId, { method:'DELETE', headers:{'Authorization':'Bearer '+accessToken} });
     if (task.calPastDueEventId) {
-      await fetch('https://www.googleapis.com/calendar/v3/calendars/primary/events/'+task.calPastDueEventId, { method:'DELETE', headers:{'Authorization':'Bearer '+accessToken} });
+      await fetch('https://www.googleapis.com/calendar/v3/calendars/' + encodeURIComponent(calId) + '/events/'+task.calPastDueEventId, { method:'DELETE', headers:{'Authorization':'Bearer '+accessToken} });
       delete task.calPastDueEventId;
     }
     delete task.calEventId;
+    delete task.calCalendarId;
     await driveWrite(p, p.fileId);
     renderTaskList();
     toast('Removed from Calendar');
