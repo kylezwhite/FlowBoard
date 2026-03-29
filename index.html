@@ -315,12 +315,8 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 .assignee-chip{display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent);padding:3px 8px;border-radius:12px;font-size:12px}
 .assignee-chip button{background:none;color:var(--accent);font-size:13px;line-height:1;padding:0 1px;cursor:pointer}
 .assign-input-wrap{position:relative}
-.assign-input{padding:4px 10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--text);width:180px}
-.assign-input:focus{border-color:var(--accent)}
-.assign-suggestions{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r-sm);box-shadow:var(--shadow);z-index:200;max-height:160px;overflow-y:auto;margin-top:2px}
-.assign-suggestion{padding:7px 12px;font-size:13px;cursor:pointer;transition:background 0.12s}
-.assign-suggestion:hover{background:var(--bg3)}
-.assign-suggestion-new{color:var(--accent)}
+.assign-select-dd{padding:5px 10px;background:var(--surface);border:1px solid var(--border);border-radius:12px;font-size:12px;color:var(--text2);font-family:var(--font);cursor:pointer;max-width:220px}
+.assign-select-dd:focus{border-color:var(--accent);color:var(--text)}
 
 /* Panel action buttons */
 .panel-actions{display:flex;gap:6px;flex-wrap:wrap}
@@ -2079,12 +2075,7 @@ function insertTaskPanel(task, canEdit) {
   panel.id = 'panel-' + task.id;
   panel.innerHTML = buildTaskPanel(task, canEdit);
   taskRow.insertAdjacentElement('afterend', panel);
-  // Wire up assign autocomplete
-  const ainput = panel.querySelector('.assign-input');
-  if (ainput) {
-    ainput.addEventListener('input', () => showAssignSuggestions(task.id, ainput.value));
-    ainput.addEventListener('blur', () => setTimeout(() => { const s = document.getElementById('sugg-'+task.id); if(s) s.remove(); }, 200));
-  }
+  // Dropdown handles assignment - no extra wiring needed
 }
 
 function buildTaskPanel(task, canEdit) {
@@ -2133,7 +2124,7 @@ function buildTaskPanel(task, canEdit) {
   html += '<div class="assignee-chips" id="achips-' + task.id + '">';
   if (assignees.length) {
     html += assignees.map(e => {
-      const person = peopleList.find(x=>x.key===e||x.email===e);
+      const person = peopleList.find(x=>x.key===e||x.email===e||x.name===e);
       const name = person ? person.name : e;
       return '<span class="assignee-chip">' + esc(name) + (canEdit?'<button onclick="unassign(\'' + task.id + '\',\'' + esc(e) + '\')">×</button>':'') + '</span>';
     }).join('');
@@ -2142,10 +2133,15 @@ function buildTaskPanel(task, canEdit) {
   }
   html += '</div>';
   if (canAssign) {
-    html += '<div class="assign-input-wrap">';
-    html += '<input class="assign-input" id="ainput-' + task.id + '" placeholder="' + (canAssignOth ? 'Search or add person...' : 'Add yourself...') + '">';
-    html += '<div class="assign-suggestions hidden" id="sugg-' + task.id + '"></div>';
-    html += '</div>';
+    const assignable = getAssignablePeople(canAssignOth);
+    const available = assignable.filter(x => !assignees.includes(x.key) && !assignees.includes(x.email) && !assignees.includes(x.name));
+    html += '<select class="assign-select-dd" id="asel-' + task.id + '" onchange="assignFromDropdown(\'' + task.id + '\',this)">';
+    html += '<option value="">+ Assign someone...</option>';
+    available.forEach(person => {
+      html += '<option value="' + esc(person.key) + '">' + esc(person.name) + (person.email?' ('+esc(person.email)+')':'') + '</option>';
+    });
+    html += '<option value="__custom__">+ Add new person...</option>';
+    html += '</select>';
   }
   html += '</div></div>';
 
@@ -2265,65 +2261,55 @@ async function saveDueDate(taskId, clear=false) {
 }
 
 // ── ASSIGNMENT ──
-function showAssignSuggestions(taskId, query) {
-  const p = currentProject();
-  const task = (p.tasks||[]).find(t=>t.id===taskId);
-  const existing = task?.assignees || [];
-  const canAssignOth = canAssignOthers(p);
-
-  let candidates = canAssignOth
-    ? [...peopleList]
-    : peopleList.filter(x=>x.email===currentUser.email||x.key===currentUser.email);
-
-  // Also add org members to candidate pool
+function getAssignablePeople(canAssignOth) {
+  let people = [...peopleList];
+  if (!people.find(p=>p.email===currentUser.email)) {
+    people.unshift({ name: currentUser.name + ' (me)', email: currentUser.email, key: currentUser.email });
+  } else {
+    people = people.map(p => p.email===currentUser.email ? {...p, name: p.name.replace(' (me)','')+' (me)'} : p);
+  }
   if (currentProjectType === 'org' && currentOrg) {
     currentOrg.members.forEach(m => {
-      if (!candidates.find(c=>c.key===m.email||c.email===m.email)) {
-        candidates.push({ name: m.name||m.email, email: m.email, key: m.email });
+      if (!people.find(p=>p.email===m.email||p.key===m.email)) {
+        people.push({ name: m.name||m.email, email: m.email, key: m.email });
       }
     });
   }
-
-  candidates = candidates.filter(c => !existing.includes(c.key) && !existing.includes(c.email));
-  if (query) candidates = candidates.filter(c => c.name.toLowerCase().includes(query.toLowerCase()) || (c.email||'').toLowerCase().includes(query.toLowerCase()));
-
-  const sugg = document.getElementById('sugg-' + taskId);
-  if (!sugg) return;
-
-  let html = candidates.slice(0,6).map(c =>
-    `<div class="assign-suggestion" onclick="assignPerson('${taskId}','${esc(c.key)}')">${esc(c.name)}</div>`
-  ).join('');
-
-  if (query && !candidates.find(c=>c.name.toLowerCase()===query.toLowerCase())) {
-    html += `<div class="assign-suggestion assign-suggestion-new" onclick="assignNewPerson('${taskId}','${esc(query)}')">+ Add "${esc(query)}"</div>`;
-  }
-
-  if (!html) { sugg.classList.add('hidden'); return; }
-  sugg.innerHTML = html;
-  sugg.classList.remove('hidden');
+  if (!canAssignOth) people = people.filter(p=>p.email===currentUser.email||p.key===currentUser.email);
+  return people;
 }
 
-async function assignPerson(taskId, personKey) {
+async function assignFromDropdown(taskId, selectEl) {
+  const val = selectEl.value;
+  if (!val) return;
+  selectEl.value = '';
+  if (val === '__custom__') {
+    const name = prompt('Enter name or email to assign:');
+    if (!name || !name.trim()) return;
+    const trimmed = name.trim();
+    addPersonToList(trimmed, '');
+    renderPeopleSettings();
+    await assignPerson(taskId, trimmed);
+    return;
+  }
+  await assignPerson(taskId, val);
+}
+
+async function assignPerson(taskId, key) {
   const p = currentProject();
+  if (!p) return;
   const task = (p.tasks||[]).find(t=>t.id===taskId);
   if (!task) return;
   if (!task.assignees) task.assignees = [];
-  if (!task.assignees.includes(personKey)) task.assignees.push(personKey);
+  if (task.assignees.includes(key)) return;
+  task.assignees.push(key);
+  const existing = peopleList.find(x=>x.key===key||x.email===key||x.name===key);
+  if (!existing) { addPersonToList(key, ''); renderPeopleSettings(); }
   p.modifiedAt = new Date().toISOString();
   await driveWrite(p, p.fileId);
-  const ainput = document.getElementById('ainput-' + taskId);
-  if (ainput) ainput.value = '';
-  const sugg = document.getElementById('sugg-' + taskId);
-  if (sugg) sugg.classList.add('hidden');
+  syncProjectToSidebar(p);
   renderTaskList();
   toast('Assigned');
-}
-
-async function assignNewPerson(taskId, name) {
-  const key = 'placeholder_' + name.toLowerCase().replace(/\s+/g,'_') + '_' + Date.now();
-  addPersonToList(name, '');
-  renderPeopleSettings();
-  await assignPerson(taskId, name); // use name as key for placeholders
 }
 
 async function unassign(taskId, personKey) {
@@ -2456,87 +2442,170 @@ function renderAtmGroup(g, idx) {
   const pct = total ? Math.round(done/total*100) : 0;
   const isOpen = !!atmExpanded[idx];
   const now = new Date();
-
   let taskRows = '';
   if (isOpen) {
-    taskRows = '<div class="atm-tasks">' + g.tasks.map(t => {
+    const rows = g.tasks.map(t => {
       const sc = t.status==='todo'?'status-todo':t.status==='progress'?'status-prog':'status-done';
-      let dueHtml = '';
-      if (t.dueDate) { const due=new Date(t.dueDate); const od=due<now&&t.status!=='done'; dueHtml='<span class="atm-task-due'+(od?' overdue':'')+'">📅 '+due.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(od?' · PAST DUE':'')+'</span>'; }
-      return `<div class="atm-task">
-        <div class="task-chk ${t.status==='done'?'checked':''}" onclick="atmToggle(${idx},'${t.id}')" style="width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;background:${t.status==='done'?'var(--done-c)':'transparent'};border-color:${t.status==='done'?'var(--done-c)':'var(--border2)'}">
-          ${t.status==='done'?'<svg viewBox="0 0 24 24" style="width:9px;height:9px;fill:white"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>':''}
-        </div>
-        <span class="atm-task-title">${esc(t.title)}</span>
-        ${dueHtml}
-        <select class="status-sel ${sc}" onchange="atmSetStatus(${idx},'${t.id}',this.value)" style="font-size:11px">
-          <option value="todo" ${t.status==='todo'?'selected':''}>To Do</option>
-          <option value="progress" ${t.status==='progress'?'selected':''}>In Progress</option>
-          <option value="done" ${t.status==='done'?'selected':''}>Complete</option>
-        </select>
-      </div>`;
-    }).join('') + '</div>';
+      const assignees = t.assignees || [];
+      const notes = t.notes || [];
+      let meta = ['Added ' + new Date(t.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric'})];
+      if (t.dueDate) { const d=new Date(t.dueDate); const od=d<now&&t.status!=='done'; meta.push((od?'<span class="task-meta-badge overdue">':'<span class="task-meta-badge">')+'📅 '+d.toLocaleDateString('en-US',{month:'short',day:'numeric'})+(od?' · PAST DUE':'')+'</span>'); }
+      if (notes.length) meta.push('<span class="task-meta-badge">📝 '+notes.length+' note'+(notes.length!==1?'s':'')+'</span>');
+      if (assignees.length) meta.push('<span class="task-meta-badge">👤 '+assignees.map(e=>{const px=peopleList.find(x=>x.key===e||x.email===e||x.name===e);return esc(px?px.name.split(' ')[0]:e.split('@')[0]);}).join(', ')+'</span>');
+      const isPanelOpen = !!atmExpanded[idx+'_'+t.id];
+      const panelHtml = isPanelOpen ? buildAtmTaskPanel(t, g, idx) : '';
+      const chkClass = 'task-chk' + (t.status==='done'?' checked':'');
+      const expClass = 'expand-icon' + (isPanelOpen?' open':'');
+      return '<div class="task-row'+(t.status==='done'?' done':'')+'" style="margin-bottom:4px">' +
+        '<div class="task-row-main">' +
+          '<div class="'+chkClass+'" data-gidx="'+idx+'" data-tid="'+esc(t.id)+'" onclick="atmToggleChk(this)">' +
+            '<svg viewBox="0 0 24 24"><path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4L9 16.2z"/></svg>' +
+          '</div>' +
+          '<div class="task-body" data-gidx="'+idx+'" data-tid="'+esc(t.id)+'" onclick="atmTogglePanel(this)" style="cursor:pointer">' +
+            '<div class="task-title">'+esc(t.title)+'</div>' +
+            '<div class="task-meta">'+meta.join(' · ')+'</div>' +
+          '</div>' +
+          '<div class="task-row-actions">' +
+            '<select class="status-sel '+sc+'" data-gidx="'+idx+'" data-tid="'+esc(t.id)+'" onchange="atmStatusChange(this)" onclick="event.stopPropagation()">' +
+              '<option value="todo"'+(t.status==='todo'?' selected':'')+'>To Do</option>' +
+              '<option value="progress"'+(t.status==='progress'?' selected':'')+'>In Progress</option>' +
+              '<option value="done"'+(t.status==='done'?' selected':'')+'>Complete</option>' +
+            '</select>' +
+            '<svg class="'+expClass+'" viewBox="0 0 24 24" data-gidx="'+idx+'" data-tid="'+esc(t.id)+'" onclick="atmTogglePanel(this)" style="cursor:pointer;width:14px;height:14px;fill:var(--text3)"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>' +
+          '</div>' +
+        '</div>' +
+        panelHtml +
+      '</div>';
+    });
+    taskRows = '<div class="atm-tasks">' + rows.join('') + '</div>';
+  }
+  return '<div class="atm-card" id="atm-'+idx+'">' +
+    '<div class="atm-header" data-gidx="'+idx+'" onclick="atmToggleGroup(this)">' +
+      '<div class="atm-bar" style="background:'+esc(g.colorHex)+'"></div>' +
+      '<div class="atm-info">' +
+        '<div class="atm-proj-name">'+esc(g.projectName)+'</div>' +
+        '<div class="atm-source">'+esc(g.source)+' · '+total+' task'+(total!==1?'s':'')+' assigned to you</div>' +
+      '</div>' +
+      '<div class="atm-stats">' +
+        '<div class="atm-mini-bar"><div class="atm-mini-fill" style="width:'+pct+'%;background:'+esc(g.colorHex)+'"></div></div>' +
+        '<span class="atm-pct">'+pct+'%</span>' +
+      '</div>' +
+      '<svg class="atm-chevron'+(isOpen?' open':'')+'" viewBox="0 0 24 24" style="width:14px;height:14px;fill:var(--text3);transition:transform 0.2s"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>' +
+    '</div>' +
+    taskRows +
+  '</div>';
+}
+
+// Data-attribute driven event handlers for ATM (avoids quoting nightmares)
+function atmToggleChk(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmToggle(gi,tid); }
+function atmTogglePanel(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; toggleAtmTaskPanel(gi,tid); }
+function atmStatusChange(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmSetStatus(gi,tid,el.value); }
+function atmToggleGroup(el) { const gi=parseInt(el.dataset.gidx); toggleAtmGroup(gi); }
+
+
+function buildAtmTaskPanel(task, g, groupIdx) {
+  const notes = task.notes || [];
+  const hasDue = !!task.dueDate;
+  const assignees = task.assignees || [];
+  const isSynced = !!task.calEventId;
+  let html = '<div class="task-panel">';
+
+  // Notes
+  html += '<div class="panel-section"><div class="panel-label">Notes & Updates</div>';
+  html += '<div class="notes-log">';
+  html += notes.length ? notes.map(n=>'<div class="note-entry"><div class="note-ts">'+new Date(n.ts).toLocaleString()+'</div><div class="note-text">'+esc(n.text)+'</div></div>').join('') : '<div style="font-size:13px;color:var(--text3);padding:6px 0">No notes yet.</div>';
+  html += '</div>';
+  html += '<div class="note-add"><textarea class="note-textarea" id="atmnote-'+groupIdx+'-'+task.id+'" placeholder="Add an update..."></textarea>';
+  html += '<button class="btn btn-primary btn-sm" data-gidx="'+groupIdx+'" data-tid="'+esc(task.id)+'" onclick="atmAddNoteBtn(this)">Add</button></div>';
+  html += '</div>';
+
+  // Due date
+  if (hasDue) {
+    const due = new Date(task.dueDate);
+    const isOD = due < new Date() && task.status !== 'done';
+    const fmtDue = due.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
+    html += '<div class="panel-section"><div class="panel-label">Due Date</div>';
+    html += '<div class="due-row"><span class="task-meta-badge'+(isOD?' overdue':'')+'">📅 '+fmtDue+(isOD?' · PAST DUE':'')+'</span></div></div>';
   }
 
-  return `<div class="atm-card" id="atm-${idx}">
-    <div class="atm-header" onclick="toggleAtmGroup(${idx})">
-      <div class="atm-bar" style="background:${g.colorHex}"></div>
-      <div class="atm-info">
-        <div class="atm-proj-name">${esc(g.projectName)}</div>
-        <div class="atm-source">${esc(g.source)} · ${total} task${total!==1?'s':''} assigned to you</div>
-      </div>
-      <div class="atm-stats">
-        <div class="atm-mini-bar"><div class="atm-mini-fill" style="width:${pct}%;background:${g.colorHex}"></div></div>
-        <span class="atm-pct">${pct}%</span>
-      </div>
-      <svg class="atm-chevron ${isOpen?'open':''}" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-    </div>
-    ${taskRows}
-  </div>`;
+  // Assignees (read-only in ATM)
+  html += '<div class="panel-section"><div class="panel-label">Assigned To</div>';
+  html += '<div class="assignee-chips">';
+  if (assignees.length) {
+    html += assignees.map(e => {
+      const px = peopleList.find(x=>x.key===e||x.email===e||x.name===e);
+      return '<span class="assignee-chip">'+esc(px?px.name:e)+'</span>';
+    }).join('');
+  } else {
+    html += '<span style="font-size:12px;color:var(--text3)">Nobody assigned</span>';
+  }
+  html += '</div></div>';
+
+  // Calendar
+  html += '<div class="panel-section"><div class="panel-label">Calendar</div>';
+  html += '<div class="panel-actions">';
+  if (hasDue) {
+    html += '<button class="btn-xs '+(isSynced?'active':'')+'" data-gidx="'+groupIdx+'" data-tid="'+esc(task.id)+'" onclick="atmSyncBtn(this)">';
+    html += '<svg viewBox="0 0 24 24" fill="currentColor" style="width:11px;height:11px"><path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/></svg>';
+    html += (isSynced?'✓ Synced to Calendar':'Sync to Calendar')+'</button>';
+  } else {
+    html += '<span style="font-size:12px;color:var(--text3)">Set a due date first to sync</span>';
+  }
+  html += '</div></div>';
+
+  html += '</div>';
+  return html;
 }
 
-function toggleAtmGroup(idx) {
-  atmExpanded[idx] = !atmExpanded[idx];
-  const card = document.getElementById('atm-' + idx);
-  if (card) card.outerHTML = renderAtmGroup(atmGroups[idx], idx);
+function toggleAtmTaskPanel(groupIdx, taskId) {
+  const key = groupIdx + '_' + taskId;
+  atmExpanded[key] = !atmExpanded[key];
+  const card = document.getElementById('atm-' + groupIdx);
+  if (card) card.outerHTML = renderAtmGroup(atmGroups[groupIdx], groupIdx);
 }
 
-async function atmSetStatus(groupIdx, taskId, status) {
+async function atmAddNote(groupIdx, taskId) {
   const g = atmGroups[groupIdx];
   if (!g) return;
   const task = g.tasks.find(t=>t.id===taskId);
   if (!task) return;
-  task.status = status;
+  const input = document.getElementById('atmnote-'+groupIdx+'-'+taskId);
+  const text = input ? input.value.trim() : '';
+  if (!text) return;
+  if (!task.notes) task.notes = [];
+  task.notes.push({ ts: new Date().toISOString(), text });
+  if (input) input.value = '';
   await atmWriteBack(g, taskId, task);
   const card = document.getElementById('atm-' + groupIdx);
   if (card) card.outerHTML = renderAtmGroup(g, groupIdx);
+  toast('Note added');
 }
 
-async function atmToggle(groupIdx, taskId) {
+async function atmSyncCalendar(groupIdx, taskId) {
   const g = atmGroups[groupIdx];
   if (!g) return;
   const task = g.tasks.find(t=>t.id===taskId);
-  if (!task) return;
-  task.status = task.status==='done'?'todo':'done';
-  await atmWriteBack(g, taskId, task);
-  const card = document.getElementById('atm-' + groupIdx);
-  if (card) card.outerHTML = renderAtmGroup(g, groupIdx);
-}
-
-async function atmWriteBack(g, taskId, updatedTask) {
-  // Find source project and update it
-  const findAndUpdate = (projects) => {
-    for (const p of projects) {
-      if (p.fileId !== g.fileId) continue;
-      const t = (p.tasks||[]).find(x=>x.id===taskId);
-      if (t) { Object.assign(t, updatedTask); return p; }
+  if (!task || !task.dueDate) { toast('Set a due date first', 'error'); return; }
+  const savedType = currentProjectType;
+  const savedPersonal = currentPersonalProject;
+  const savedOrg2 = currentOrgProject;
+  const savedOrg3 = currentOrg;
+  let sourceProj = personalProjects.find(p=>p.fileId===g.fileId);
+  if (sourceProj) { currentProjectType = 'personal'; currentPersonalProject = sourceProj; }
+  else {
+    for (const org of orgs) {
+      const op = (org.projects||[]).find(p=>p.fileId===g.fileId);
+      if (op) { currentProjectType = 'org'; currentOrgProject = op; currentOrg = org; break; }
     }
-    return null;
-  };
-  let proj = findAndUpdate(personalProjects);
-  if (!proj) { for (const org of orgs) { proj = findAndUpdate(org.projects||[]); if(proj) break; } }
-  if (proj) await driveWrite(proj, proj.fileId);
+  }
+  await syncToCalendar(taskId);
+  currentProjectType = savedType; currentPersonalProject = savedPersonal; currentOrgProject = savedOrg2; currentOrg = savedOrg3;
+  const card = document.getElementById('atm-' + groupIdx);
+  if (card) card.outerHTML = renderAtmGroup(g, groupIdx);
 }
+
+function atmAddNoteBtn(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmAddNote(gi,tid); }
+
 
 // ═══════════════════════════════════════════════════
 // PROJECT CARD RENDERING
@@ -2610,3 +2679,5 @@ document.getElementById('sbi-settings')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
+
+function atmSyncBtn(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmSyncCalendar(gi,tid); }
