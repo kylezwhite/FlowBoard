@@ -1,58 +1,59 @@
 # Taskie
 
-**Free, open-source project management that lives in your Google Drive.**
+**Free, open-source project management powered by your Google Drive.**
 
 No servers. No monthly fees. No data stored by us. Your projects live in your own Google Drive — forever.
 
 [![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy%20to-GitHub%20Pages-blue?style=for-the-badge&logo=github)](https://github.com/kylezwhite/Taskie/fork)
 
-> ⚠️ After deploying, you still need to complete the **Google OAuth setup** (Step 3 below). The app won't work until you do — it takes about 10 minutes.
-
 ---
 
 ## Features
 
-- **Personal workspace** — private projects only you can see, stored in your Drive
+- **Personal workspace** — private projects stored in your Drive, invisible to everyone else
 - **Organization workspace** — shared projects with role-based permissions
 - **Admin / Member roles** — invite people, promote/demote, remove at any time
 - **Hidden projects** — only visible to assigned collaborators
-- **Tasks** with To Do / In Progress / Complete status and sorting
-- **Task detail panels** — notes with timestamps, due dates, calendar sync
-- **Assign tasks** — to org members, personal contacts, or placeholder names
-- **Assigned to Me** — view all tasks assigned to you across every project and org
-- **Google Calendar sync** — dedicated Taskie calendars per workspace, with alerts
+- **Tasks** — To Do / In Progress / Complete, with sorting and filtering
+- **Task detail panels** — timestamped notes log, due dates with time, calendar sync
+- **Assign tasks** — to org members, saved contacts, or placeholder names (no account needed)
+- **Assigned to Me** — all tasks assigned to you across every project and org, in one view
+- **Google Calendar sync** — dedicated Taskie calendars per workspace, never pollutes your primary calendar
 - **Share personal projects** — via email invite link
 - **Transfer projects to an org** — move personal work into your organization
-- **Transfer org ownership** — hand off an org to another user with Drive access instructions
-- **Settings** — Dark, Light, Slate, and Retro 70s themes; global alert defaults; people list
+- **Transfer org ownership** — full 3-step Drive ownership transfer flow
+- **4 themes** — Dark, Light, Slate, Retro 70s
+- **Global alert defaults** — configure reminder timing once, applies everywhere
+- **People list** — manage your assignment autocomplete in Settings
+- **Live sync** — polls for changes every 5 seconds when viewing org projects
 - **Installable PWA** — works on desktop and mobile like a native app
-- **100% free** — runs on Google Drive storage and Google OAuth, both free
+- **100% free** — Google Drive storage + Google OAuth, both free
 
 ---
 
-## How It Works
+## How Data Is Stored
 
 ```
 Your Google Drive
-└── Taskie_Data/
-    ├── project_abc.json    ← your personal projects
-    └── ...
-
-Taskie_Orgs/
-└── org_xyz/
-    ├── taskie_org_xyz.json     ← org members & settings
-    └── projects/
-        ├── project_1.json      ← org projects
-        └── ...
+└── Taskie/
+    ├── My Projects/
+    │   ├── project_abc.json
+    │   └── ...
+    └── Organizations/
+        └── org_xyz/
+            ├── taskie_org_xyz.json
+            └── projects/
+                ├── project_1.json
+                └── ...
 ```
 
-Each user's data lives in **their own Google Drive**. You as the app owner never see, store, or have access to anyone's data. There is no central database.
+All data lives in **your own Google Drive**. You as the app owner never see or have access to anyone's data. There is no central database or server.
 
 ---
 
 ## Deploy Your Own Copy
 
-Total time: ~15 minutes. Hosted free on GitHub Pages — no bandwidth limits, no suspensions.
+**Total time: ~20 minutes.** Hosted free on GitHub Pages — no bandwidth limits, no suspensions.
 
 ---
 
@@ -61,121 +62,169 @@ Total time: ~15 minutes. Hosted free on GitHub Pages — no bandwidth limits, no
 1. Click **Fork** at the top right of this repository
 2. Go to your fork → **Settings** → **Pages** (left sidebar)
 3. Under **Source**, select **Deploy from a branch**
-4. Choose **main** branch, **/ (root)** folder → click **Save**
-5. Wait ~60 seconds — your URL will appear: `https://YOUR_USERNAME.github.io/Taskie`
+4. Branch: **main**, Folder: **/ (root)** → click **Save**
+5. Wait ~60 seconds — your URL appears: `https://YOUR_USERNAME.github.io/Taskie`
 
 ---
 
-### Step 2 — Set Up Google OAuth (Required)
+### Step 2 — Create a Google Cloud Project
 
-#### 2a. Create a Google Cloud Project
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Click **Select a project** → **New Project** → name it `Taskie` → **Create**
+2. Click **Select a project** → **New Project**
+3. Name it `Taskie` → click **Create**
+4. Make sure your new project is selected in the top dropdown
 
-#### 2b. Enable Required APIs
+---
+
+### Step 3 — Enable Required APIs
+
+Both APIs are required. Missing either one will cause sign-in or calendar features to fail.
+
 1. Go to **APIs & Services → Library**
-2. Search **Google Drive API** → **Enable**
-3. Search **Google Calendar API** → **Enable**
+2. Search **Google Drive API** → click it → click **Enable**
+3. Go back to Library, search **Google Calendar API** → click it → click **Enable**
 
-#### 2c. Configure Google Auth Platform
-1. Click **Google Auth Platform** in the sidebar (or APIs & Services → OAuth consent screen)
-2. If unconfigured, click **Get started** and complete the 4-screen setup:
-   - App name: `Taskie`, support email: yours
-   - Audience: **External**
-   - Contact email: yours
-   - Agree and continue
+---
 
-#### 2d. Create OAuth Client ID
-1. Click **Clients** in the sidebar → **Create Client**
-2. Choose **Web application**
-3. Under **Authorized JavaScript origins** add:
+### Step 4 — Configure Google Auth Platform
+
+1. In the left sidebar, click **Google Auth Platform**
+   - If you see "Google Auth Platform not configured", click **Get started**
+2. Complete the setup across 4 screens:
+   - **App Information:** App name = `Taskie`, User support email = your email → **Next**
+   - **Audience:** select **External** → **Next**
+   - **Contact Information:** your email → **Next**
+   - **Finish:** check the agreement → **Continue**
+
+---
+
+### Step 5 — Create an OAuth Client ID
+
+1. In the left sidebar, click **Clients**
+2. Click **Create Client**
+3. Application type: **Web application**
+4. Under **Authorized JavaScript origins**, click **Add URI** and enter:
    ```
    https://YOUR_USERNAME.github.io
    ```
-   *(your GitHub username — no trailing slash, no /Taskie path)*
-4. Click **Create** → **copy your Client ID**
-
-#### 2e. Publish the App
-1. Click **Audience** in the sidebar
-2. Click **Publish App** so any Google account can sign in
-3. If you want to test first, add your email under **Test users** → **Add users** before publishing
+   ⚠️ This must be your GitHub username domain only — **no trailing slash, no /Taskie path**
+5. Click **Create**
+6. A dialog shows your credentials — **copy the Client ID**
+   - It looks like: `123456789-abc.apps.googleusercontent.com`
 
 ---
 
-### Step 3 — Add Your Client ID to the App
+### Step 6 — Bake Your Client ID Into the App
 
-1. In your GitHub repo, click `index.html` → pencil icon to edit
-2. Find:
+1. In your GitHub repo, click `index.html`
+2. Click the **pencil icon** (Edit this file)
+3. Press **Ctrl+F** and search for `HARDCODED_CLIENT_ID`
+4. Find this line:
    ```javascript
    const HARDCODED_CLIENT_ID = '';
    ```
-3. Replace with your Client ID:
+5. Replace with your Client ID:
    ```javascript
    const HARDCODED_CLIENT_ID = '123456789-abc.apps.googleusercontent.com';
    ```
-4. Click **Commit changes** — GitHub Pages redeploys in ~60 seconds
+6. Click **Commit changes** → GitHub Pages rebuilds in ~60 seconds
 
 ---
 
-### Step 4 — Test It
+### Step 7 — Publish the App
 
-Visit `https://YOUR_USERNAME.github.io/Taskie` → **Continue with Google** → done!
+By default Google puts new apps in "Testing" mode — only explicitly added test users can sign in.
+
+**To open to everyone:**
+1. Go to **Google Auth Platform → Audience**
+2. Click **Publish App**
+3. Confirm
+
+**To stay in testing (just for yourself or a small team):**
+1. Go to **Google Auth Platform → Audience → Test users**
+2. Click **Add users** and add each Google email that should have access
 
 ---
 
-## Installing as a PWA
+### Step 8 — First Sign In
 
-| Platform | How to install |
+1. Go to `https://YOUR_USERNAME.github.io/Taskie`
+2. Click **Continue with Google**
+3. Google will show a consent screen listing the permissions Taskie requests:
+   - **Google Drive** — to store your project data
+   - **Google Calendar** — to create dedicated Taskie calendars
+   - **Profile & Email** — to identify you
+4. Click **Allow**
+5. You're in. Taskie creates its folder structure in your Drive automatically.
+
+---
+
+## Google OAuth Permissions Explained
+
+Taskie requests these scopes:
+
+| Scope | Why |
 |---|---|
-| **Chrome / Edge (Desktop)** | Install icon in the address bar |
-| **iPhone / iPad** | Safari → Share → Add to Home Screen |
-| **Android** | Chrome → menu → Install app |
-
----
-
-## Themes
-
-Taskie ships with four built-in themes, switchable in Settings:
-
-| Theme | Description |
-|---|---|
-| **Dark** | Deep navy with sky blue accents (default) |
-| **Light** | Clean white with blue accents |
-| **Slate** | Dark slate with purple accents |
-| **Retro 70s** | Deep navy with teal, red-orange, and amber — inspired by classic 70s poster art |
+| `drive.file` | Read/write only files Taskie itself creates — never your whole Drive |
+| `calendar` | Create and manage dedicated Taskie calendars |
+| `userinfo.email` | Know who you are |
+| `userinfo.profile` | Show your name and photo |
 
 ---
 
 ## Google Calendar Integration
 
-When you sync a task to Google Calendar, Taskie creates a **dedicated calendar** — it won't pollute your primary calendar:
+Taskie never adds events to your primary Google Calendar. Instead it creates dedicated calendars automatically on first sync:
 
-- Personal tasks → **Taskie - My Projects** calendar
-- Org tasks → **Taskie - [Org Name]** calendar (one per org)
+- **Taskie - My Projects** — for personal workspace tasks
+- **Taskie - [Org Name]** — one per organization you belong to
 
-Calendars are created automatically on first sync and reused after that.
+These appear in Google Calendar's sidebar and can be shown/hidden independently.
+
+**If calendars aren't appearing:** Go to Taskie Settings → click **↺ Reset Calendar Cache**, then try syncing a task again. This clears any stale calendar IDs and forces fresh creation.
+
+**If you get a permission error on sync:** Sign out of Taskie and back in. Google needs to re-issue your token with Calendar permissions if they weren't granted on your first sign in.
+
+---
+
+## Installing as a PWA
+
+| Platform | How |
+|---|---|
+| **Chrome / Edge (Desktop)** | Click the install icon in the address bar |
+| **iPhone / iPad** | Safari → Share button → Add to Home Screen |
+| **Android** | Chrome → three-dot menu → Install app |
+
+---
+
+## Themes
+
+Switch themes in Settings → Theme:
+
+| Theme | Look |
+|---|---|
+| **Dark** | Deep navy, sky blue accents (default) |
+| **Light** | Clean white, blue accents |
+| **Slate** | Dark slate, purple accents |
+| **Retro 70s** | Deep navy with teal, pink, orange, amber gradient |
 
 ---
 
 ## Organization Setup
 
-**Recommended: use a dedicated Google account** (e.g. `yourcompany.taskie@gmail.com`) so the org isn't tied to one person. Store credentials in a shared password manager.
+See **ORG_SETUP.md** for the full guide. Short version:
 
-1. Sign into Taskie with the dedicated account → create the org
-2. Sign back out, sign in with your personal account
-3. Get invited as admin by the dedicated account
-
-See **ORG_SETUP.md** for the full organization setup guide.
+**Use a dedicated Google account** (e.g. `yourcompany.taskie@gmail.com`) so the org isn't tied to one person. Store credentials in a shared password manager. Sign into Taskie with that account to create the org, then invite your personal account as Admin.
 
 ---
 
 ## Roles & Permissions
 
-| Role | Permissions |
+| Role | Can do |
 |---|---|
-| **Owner** | Full control — created the org |
+| **Owner** | Everything — created the org |
 | **Admin** | Invite/remove members, manage all projects, org settings, transfer ownership |
-| **Member** | Create projects, manage their own |
+| **Member** | Create and manage their own projects |
 
 **Task assignment:** Owners, Admins, and project creators can assign anyone. Members can only self-assign.
 
@@ -185,25 +234,52 @@ See **ORG_SETUP.md** for the full organization setup guide.
 
 | Problem | Fix |
 |---|---|
-| Sign in error | Add `https://YOUR_USERNAME.github.io` as Authorized JavaScript Origin (no path, no trailing slash) |
-| "Access blocked" | Publish the app under Audience in Google Auth Platform, or add your email as a Test User |
-| 404 on GitHub Pages | Wait a few minutes after enabling, or check Settings → Pages |
-| Projects not loading | Sign out and back in |
-| Changes not saving | Check internet connection — saves go direct to Google Drive |
-| Setup screen on new device | Make sure `HARDCODED_CLIENT_ID` is set in `index.html` — not just stored in browser localStorage |
-| Calendar sync fails | Make sure Google Calendar API is enabled in your Google Cloud project |
+| **Sign in error / "origin not allowed"** | Add `https://YOUR_USERNAME.github.io` as Authorized JavaScript Origin in Google Cloud → Clients. No trailing slash. No `/Taskie` path. |
+| **"Access blocked: app not verified"** | Go to Google Auth Platform → Audience → Publish App (or add your email as a Test User) |
+| **Setup screen appears on new device** | The Client ID must be hardcoded in `index.html` — not just saved in browser localStorage |
+| **Calendar events not appearing** | 1) Make sure Google Calendar API is enabled in Google Cloud. 2) Sign out and back in to re-grant calendar permissions. 3) Settings → Reset Calendar Cache |
+| **"Permission denied" on calendar sync** | Sign out and back in — your session was granted before calendar permissions were added |
+| **Projects not loading** | Sign out and back in — your session token may have expired |
+| **Org not appearing after being invited** | Sign out and back in |
+| **Changes not saving** | Check internet connection — saves go directly to Google Drive |
+| **404 on GitHub Pages** | Wait a few minutes after enabling Pages. Check Settings → Pages to confirm it's active and pointing to main branch |
+| **PWA install option missing** | Must be on HTTPS — GitHub Pages provides this automatically |
 
 ---
 
 ## Tech Stack
 
-- **Frontend:** Vanilla HTML/CSS/JS — no build tools, no dependencies
-- **Auth:** Google Identity Services (OAuth 2.0)
-- **Storage:** Google Drive API v3
-- **Calendar:** Google Calendar API v3
-- **Hosting:** GitHub Pages (free, unlimited bandwidth)
-- **Cost:** $0
+| | |
+|---|---|
+| **Frontend** | Vanilla HTML/CSS/JS — single file, no build tools, no dependencies |
+| **Auth** | Google Identity Services (OAuth 2.0) |
+| **Storage** | Google Drive API v3 (`drive.file` scope) |
+| **Calendar** | Google Calendar API v3 |
+| **Fonts** | Outfit, JetBrains Mono, Courier Prime (Google Fonts) |
+| **Hosting** | GitHub Pages (free, unlimited bandwidth) |
+| **Cost** | $0 |
 
 ---
 
-*MIT License · No tracking · No ads · No data collection*
+## Drive Folder Structure
+
+When you first sign in, Taskie creates this structure in your Google Drive automatically:
+
+```
+Taskie/                         ← root folder
+├── My Projects/                ← personal project files
+│   ├── project_[id].json
+│   └── ...
+└── Organizations/              ← org data (if you create or join orgs)
+    └── org_[id]/
+        ├── taskie_org_[id].json
+        └── projects/
+            ├── project_[id].json
+            └── ...
+```
+
+You can move or rename other things in your Drive freely — Taskie only touches files inside its own `Taskie/` folder.
+
+---
+
+*MIT License · No tracking · No ads · No data collection · Your data stays in your Drive*
