@@ -2,11 +2,11 @@
 
 **Free, open-source project management that lives in your Google Drive.**
 
-No servers. No monthly fees. No data stored by us. Your projects live in your own Google Drive account — forever.
+No servers. No monthly fees. No data stored by us. Your projects live in your own Google Drive — forever.
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/YOUR_USERNAME/flowboard)
+[![Deploy to GitHub Pages](https://img.shields.io/badge/Deploy%20to-GitHub%20Pages-blue?style=for-the-badge&logo=github)](https://github.com/kylezwhite/FlowBoard/fork)
 
-> ⚠️ After deploying, you still need to complete the **Google OAuth setup** (Step 3 in the guide below). The app won't work until you do — it takes about 10 minutes.
+> ⚠️ After deploying, you still need to complete the **Google OAuth setup** (Step 3 below). The app won't work until you do — it takes about 10 minutes.
 
 ---
 
@@ -16,8 +16,14 @@ No servers. No monthly fees. No data stored by us. Your projects live in your ow
 - **Organization workspace** — shared projects with role-based permissions
 - **Admin / Member roles** — invite people, promote/demote, remove at any time
 - **Hidden projects** — only visible to assigned collaborators
-- **Tasks** with To Do / In Progress / Complete status
-- **Progress tracking**, filters, and statistics
+- **Tasks** with To Do / In Progress / Complete status and sorting
+- **Task detail panels** — notes with timestamps, due dates, calendar sync
+- **Assign tasks** — to org members, personal contacts, or placeholder names
+- **Assigned to Me** — view all tasks assigned to you across every project and org
+- **Google Calendar sync** — with past-due reminders and alert customization
+- **Share personal projects** — via email invite link
+- **Transfer projects to an org** — move personal work into your organization
+- **Settings** — light, dark, and slate themes; global alert defaults; people list management
 - **Installable PWA** — works on desktop and mobile like a native app
 - **100% free** — runs on Google Drive storage and Google OAuth, both free
 
@@ -39,124 +45,110 @@ FlowBoard_Orgs/
         └── ...
 ```
 
-Each user's data lives in **their own Google Drive**. You as the app owner never see, access, or store anyone's data. There is no central database.
+Each user's data lives in **their own Google Drive**. You as the app owner never see, store, or have access to anyone's data. There is no central database.
 
 ---
 
 ## Deploy Your Own Copy
 
-Follow these steps to get your own FlowBoard instance running. Total time: ~20-30 minutes.
+Total time: ~15 minutes. Hosted free on GitHub Pages — no bandwidth limits, no suspensions.
 
 ---
 
-### Step 1 — Fork & Deploy to Netlify
+### Step 1 — Fork & Enable GitHub Pages
 
-1. Click the **Deploy to Netlify** button above
-2. Connect your GitHub account when prompted
-3. Netlify will fork this repo into your GitHub and deploy it automatically
-4. Wait ~30 seconds — you'll get a URL like `https://random-name-123.netlify.app`
-5. Optional: go to **Site settings → Domain management** to customize your URL
+1. Click **Fork** at the top right of this repository
+2. Go to your fork → **Settings** → **Pages** (left sidebar)
+3. Under **Source**, select **Deploy from a branch**
+4. Choose **main** branch, **/ (root)** folder → click **Save**
+5. Wait ~60 seconds — your URL will appear: `https://YOUR_USERNAME.github.io/FlowBoard`
 
 ---
 
 ### Step 2 — Set Up Google OAuth (Required)
 
-This is what allows users to sign in with Google. You do this once.
-
 #### 2a. Create a Google Cloud Project
 1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Click **Select a project** at the top → **New Project**
-3. Name it `FlowBoard` → click **Create**
-4. Make sure your new project is selected in the top dropdown
+2. Click **Select a project** → **New Project** → name it `FlowBoard` → **Create**
 
 #### 2b. Enable Google Drive API
 1. Go to **APIs & Services → Library**
-2. Search for **Google Drive API** → click it → click **Enable**
+2. Search **Google Drive API** → **Enable**
 
 #### 2c. Configure Google Auth Platform
-> **Note:** Google recently updated their console. You may see a **Google Auth Platform** page instead of an OAuth consent screen. Here's what to do:
-
-1. In the left sidebar, click **Google Auth Platform** (or go to **APIs & Services → OAuth consent screen** — both lead to the same place)
-2. If you see "Google Auth Platform not configured yet", click **Get started**
-3. Fill in the form across 4 screens:
-   - **App Information:** App name = `FlowBoard`, User support email = your email → click **Next**
-   - **Audience:** select **External** → click **Next**
-   - **Contact Information:** enter your email → click **Next**
-   - **Finish:** check the agreement box → click **Continue**
-4. You'll land on the OAuth Overview page — setup is complete
+1. Click **Google Auth Platform** in the sidebar (or APIs & Services → OAuth consent screen)
+2. If unconfigured, click **Get started** and complete the 4-screen setup:
+   - App name: `FlowBoard`, support email: yours
+   - Audience: **External**
+   - Contact email: yours
+   - Agree and continue
 
 #### 2d. Create OAuth Client ID
-1. In the left sidebar, click **Clients**
-2. Click **Create Client**
-3. Choose **Web application**
-4. Under **Authorized JavaScript origins**, click **Add URI** and enter:
+1. Click **Clients** in the sidebar → **Create Client**
+2. Choose **Web application**
+3. Under **Authorized JavaScript origins** add:
    ```
-   https://your-site-name.netlify.app
+   https://YOUR_USERNAME.github.io
    ```
-   *(use your actual Netlify URL)*
-5. Also add `http://localhost` for local testing
-6. Click **Create**
-7. **Copy your Client ID** — it looks like: `123456789-abc.apps.googleusercontent.com`
+   *(your GitHub username, no trailing slash, no /FlowBoard)*
+4. Click **Create** → **copy your Client ID**
+
+#### 2e. Add Yourself as a Test User
+1. Click **Audience** in the sidebar
+2. Scroll to **Test users** → **Add users** → add your Google email → **Save**
 
 ---
 
 ### Step 3 — Add Your Client ID to the App
 
-1. Go to your forked GitHub repository
-2. Click on `index.html`
-3. Click the **pencil icon** (Edit file)
-4. Find this line (near the top of the `<script>` section):
+1. In your GitHub repo, click `index.html` → pencil icon to edit
+2. Find:
    ```javascript
    const HARDCODED_CLIENT_ID = '';
    ```
-5. Replace it with your Client ID:
+3. Replace with your Client ID:
    ```javascript
    const HARDCODED_CLIENT_ID = '123456789-abc.apps.googleusercontent.com';
    ```
-6. Scroll down → click **Commit changes**
-7. Netlify will automatically redeploy within ~30 seconds
+4. Click **Commit changes** — GitHub Pages redeploys in ~60 seconds
 
 ---
 
 ### Step 4 — Test It
 
-1. Visit your Netlify URL
-2. Click **Continue with Google**
-3. Sign in — you should land on your personal workspace
-4. Done! 🎉
+Visit `https://YOUR_USERNAME.github.io/FlowBoard` → **Continue with Google** → done!
 
 ---
 
-### Step 5 — Set Up Your Organization (Optional)
-
-See the full [Organization Setup Guide](SETUP.md) for:
-- Creating an org with a dedicated Google account
-- Inviting members
-- Managing roles and permissions
-- Hidden projects and collaborators
-
----
-
-## Installing as an App (PWA)
-
-FlowBoard can be installed on any device like a native app.
+## Installing as a PWA
 
 | Platform | How to install |
 |---|---|
-| **Chrome / Edge (Desktop)** | Click the install icon in the address bar |
+| **Chrome / Edge (Desktop)** | Install icon in the address bar |
 | **iPhone / iPad** | Safari → Share → Add to Home Screen |
-| **Android** | Chrome → three-dot menu → Install app |
+| **Android** | Chrome → menu → Install app |
+
+---
+
+## Organization Setup
+
+**Recommended: use a dedicated Google account** (e.g. `yourcompany.flowboard@gmail.com`) so the org isn't tied to one person. Store credentials in a shared password manager.
+
+1. Sign into FlowBoard with the dedicated account → create the org
+2. Sign back out, sign in with your personal account
+3. Get invited as admin by the dedicated account
 
 ---
 
 ## Roles & Permissions
 
-| Role | Can do |
+| Role | Permissions |
 |---|---|
-| **Owner** | Everything. Created the org. |
-| **Admin** | Invite/remove members, manage all projects, mark projects hidden |
-| **Member** | Create projects, manage their own project's collaborators |
-| **Collaborator** | View and work on specific hidden projects they've been added to |
+| **Owner** | Full control — created the org |
+| **Admin** | Invite/remove members, manage all projects, org settings |
+| **Member** | Create projects, manage their own |
+
+**Task assignment:** Owners, Admins, and project creators can assign anyone. Members can only self-assign.
 
 ---
 
@@ -164,30 +156,22 @@ FlowBoard can be installed on any device like a native app.
 
 | Problem | Fix |
 |---|---|
-| Sign in shows error | Make sure your Netlify URL is added as an Authorized JavaScript Origin in Google Cloud |
-| Projects not loading | Sign out and back in — your session may have expired |
-| Can't see org after being invited | Sign out and back in |
-| Changes not saving | Check your internet connection — saves go directly to Google Drive |
-| PWA install option not showing | Must be on HTTPS — Netlify provides this by default |
+| Sign in error | Add `https://YOUR_USERNAME.github.io` as Authorized JavaScript Origin (no path, no trailing slash) |
+| "Access blocked" | Add your email as a Test User under Audience in Google Auth Platform |
+| 404 on GitHub Pages | Wait a few minutes after enabling, or check Settings → Pages |
+| Projects not loading | Sign out and back in |
+| Changes not saving | Check internet connection — saves go direct to Google Drive |
 
 ---
 
-## Technology
+## Tech Stack
 
-| | |
-|---|---|
-| **Frontend** | Vanilla HTML/CSS/JavaScript — no build tools, no dependencies |
-| **Auth** | Google OAuth 2.0 via `apis.google.com/js/api.js` |
-| **Storage** | Google Drive API v3 |
-| **Hosting** | Netlify (free tier) |
-| **Cost** | $0 |
+- **Frontend:** Vanilla HTML/CSS/JS — no build tools
+- **Auth:** Google Identity Services (OAuth 2.0)
+- **Storage:** Google Drive API v3
+- **Hosting:** GitHub Pages (free, unlimited)
+- **Cost:** $0
 
 ---
 
-## License
-
-MIT License — free to use, modify, and distribute.
-
----
-
-*Built with Google Drive API · Hosted on Netlify · No tracking · No ads · No data collection*
+*MIT License · No tracking · No ads · No data collection*
