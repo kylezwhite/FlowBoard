@@ -7,7 +7,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <title>Taskie</title>
 <link rel="manifest" href="manifest.json">
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Courier+Prime:wght@700&display=swap" rel="stylesheet">
 <script src="https://apis.google.com/js/api.js" data-cfasync="false"></script>
 <script src="https://accounts.google.com/gsi/client" data-cfasync="false"></script>
 <style>
@@ -137,8 +137,8 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 ══════════════════════════════════════════ */
 .auth-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg)}
 .auth-card{width:380px;text-align:center;padding:20px}
-.auth-logo{width:60px;height:60px;background:linear-gradient(135deg,var(--accent),#6366f1);border-radius:16px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;box-shadow:0 0 32px var(--accent-glow)}
-.auth-logo svg{width:28px;height:28px;fill:white}
+.auth-logo{width:96px;height:96px;border-radius:22px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px}
+.auth-logo svg{width:96px;height:96px}
 .auth-card h1{font-size:30px;font-weight:700;letter-spacing:-0.5px;margin-bottom:6px}
 .auth-card h1 span{color:var(--accent)}
 .auth-card>p{color:var(--text2);font-size:14px;margin-bottom:32px;line-height:1.6}
@@ -163,8 +163,8 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 
 /* ── SIDEBAR ── */
 .sb-head{padding:16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
-.sb-logo{width:32px;height:32px;background:linear-gradient(135deg,var(--accent),#6366f1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.sb-logo svg{width:15px;height:15px;fill:white}
+.sb-logo{width:32px;height:32px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.sb-logo svg{width:32px;height:32px}
 .sb-appname{font-size:16px;font-weight:700;letter-spacing:-0.3px}
 
 .ws-switcher{margin:8px;border-radius:var(--r);border:1px solid var(--border);overflow:hidden;display:flex}
@@ -485,7 +485,7 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 <!-- ══ AUTH ══ -->
 <div id="screen-auth" class="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo" style="background:none;padding:0;width:64px;height:64px"><svg class="taskie-logo-svg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+    <div class="auth-logo" style="background:none;padding:0;width:96px;height:96px"><svg class="taskie-logo-svg" viewBox="0 0 100 100" width="96" height="96" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="retro-grad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%"   stop-color="#5ec4b4"/>
@@ -501,9 +501,8 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
       <stop offset="100%" stop-color="#16213a"/>
     </linearGradient>
   </defs>
-  <rect width="32" height="32" rx="7" fill="url(#retro-bg)"/>
-  <text x="16" y="25" text-anchor="middle" font-family="'Courier New',Courier,monospace" font-size="26" font-weight="bold" fill="url(#retro-grad)">T</text>
-</svg></div>
+  <rect width="100" height="100" rx="20" fill="url(#retro-bg)"/>
+  <text x="50" y="82" text-anchor="middle" font-family="'Courier Prime','Courier New',monospace" font-size="97" font-weight="700" fill="url(#retro-grad)">T</text></svg></div>
     <h1>Task<span>ie</span></h1>
     <p>Project management powered by your Google Drive.<br>Free forever. Your data stays yours.</p>
     <button class="btn-google" onclick="signIn()">
@@ -541,7 +540,7 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
   <!-- SIDEBAR -->
   <nav class="sidebar">
     <div class="sb-head">
-      <div class="sb-logo" style="background:none;padding:0;width:34px;height:34px"><svg class="taskie-logo-svg" viewBox="0 0 32 32" width="34" height="34" xmlns="http://www.w3.org/2000/svg">
+      <div class="sb-logo" style="background:none;padding:0;width:32px;height:32px"><svg class="taskie-logo-svg" viewBox="0 0 100 100" width="32" height="32" xmlns="http://www.w3.org/2000/svg">
   <defs>
     <linearGradient id="retro-grad" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%"   stop-color="#5ec4b4"/>
@@ -557,9 +556,8 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
       <stop offset="100%" stop-color="#16213a"/>
     </linearGradient>
   </defs>
-  <rect width="32" height="32" rx="7" fill="url(#retro-bg)"/>
-  <text x="16" y="25" text-anchor="middle" font-family="'Courier New',Courier,monospace" font-size="26" font-weight="bold" fill="url(#retro-grad)">T</text>
-</svg></div>
+  <rect width="100" height="100" rx="20" fill="url(#retro-bg)"/>
+  <text x="50" y="82" text-anchor="middle" font-family="'Courier Prime','Courier New',monospace" font-size="97" font-weight="700" fill="url(#retro-grad)">T</text></svg></div>
       <span class="sb-appname">Taskie</span>
     </div>
 
