@@ -773,6 +773,7 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
           <div class="settings-card" id="org-danger-card">
             <h3><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg> Danger Zone</h3>
             <div style="display:flex;flex-direction:column;gap:8px">
+              <div id="org-transfer-ownership-wrap"></div>
               <button class="btn btn-danger" onclick="leaveOrg()">Leave Organization</button>
               <div id="org-delete-wrap"></div>
             </div>
@@ -950,6 +951,41 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeModal('modal-transfer')">Cancel</button>
       <button class="btn btn-primary" onclick="transferToOrg()">Transfer</button>
+    </div>
+  </div>
+</div>
+
+<!-- Transfer Org Ownership -->
+<div id="modal-transfer-ownership" class="modal-overlay hidden">
+  <div class="modal modal-wide">
+    <h3>Transfer Org Ownership</h3>
+    <div class="modal-info">
+      <strong>How this works:</strong><br><br>
+      FlowBoard stores org data in the Google Drive of whoever originally created the org. Transferring ownership has two parts:<br><br>
+      <strong>Step 1 — Role transfer (automatic):</strong> The new owner gets the Owner role. You become an Admin and stay in the org.<br><br>
+      <strong>Step 2 — Drive data transfer (manual, recommended):</strong><br>
+      We'll grant the new owner full access to all org files. To fully move the data to their Drive:<br>
+      1. Ask the new owner to sign into <a href="https://drive.google.com" target="_blank">Google Drive</a> and find the <strong>FlowBoard_Orgs</strong> folder shared with them<br>
+      2. They right-click it → <strong>Make a copy</strong> (or Add shortcut to Drive)<br>
+      3. Verify FlowBoard still works correctly for all members<br>
+      4. You can then remove the original folder from your Drive if desired<br><br>
+      <strong style="color:var(--warn)">⚠ Do not delete the original until the new owner confirms everything is working.</strong>
+    </div>
+    <div class="form-field">
+      <label>New Owner *</label>
+      <select id="new-owner-sel"></select>
+    </div>
+    <div class="form-field" style="display:flex;align-items:flex-start;gap:8px;margin-top:4px">
+      <input type="checkbox" id="transfer-drive-data" style="width:15px;height:15px;accent-color:var(--accent);margin-top:2px;flex-shrink:0">
+      <label for="transfer-drive-data" style="font-size:13px;color:var(--text2);cursor:pointer;line-height:1.5">Grant new owner full write access to all org files in Google Drive <span style="color:var(--text3)">(required for them to manage org data)</span></label>
+    </div>
+    <div class="form-field">
+      <label>Type CONFIRM to proceed *</label>
+      <input type="text" id="transfer-ownership-confirm" placeholder="CONFIRM">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal('modal-transfer-ownership')">Cancel</button>
+      <button class="btn btn-primary" onclick="executeTransferOwnership()">Transfer Ownership</button>
     </div>
   </div>
 </div>
@@ -1615,6 +1651,13 @@ function renderOrgView() {
   if (isAdmin) {
     document.getElementById('org-delete-wrap').innerHTML = '<button class="btn btn-danger" onclick="openDeleteOrgModal()">Delete Organization</button>';
   }
+  const isOwner = currentOrgRole === 'owner';
+  const ownerWrap = document.getElementById('org-transfer-ownership-wrap');
+  if (ownerWrap) {
+    ownerWrap.innerHTML = isAdmin
+      ? '<button class="btn btn-ghost btn-sm" onclick="openTransferOwnershipModal()">Transfer Ownership</button>'
+      : '';
+  }
 }
 
 function renderOrgProjects() {
@@ -1731,6 +1774,90 @@ async function saveOrgAlerts() {
   };
   await driveWrite(currentOrg, currentOrg.fileId);
   toast('Org alerts saved', 'success');
+}
+
+function openTransferOwnershipModal() {
+  if (!currentOrg) return;
+  const otherAdmins = currentOrg.members.filter(m =>
+    m.email !== currentUser.email && (m.role === 'admin' || m.role === 'owner')
+  );
+  const otherMembers = currentOrg.members.filter(m => m.email !== currentUser.email);
+  const candidates = otherAdmins.length ? otherAdmins : otherMembers;
+  if (!candidates.length) { toast('No other members to transfer to', 'error'); return; }
+  document.getElementById('new-owner-sel').innerHTML = candidates.map(m =>
+    '<option value="' + esc(m.email) + '">' + esc(m.name||m.email) + ' (' + m.role + ')</option>'
+  ).join('');
+  document.getElementById('transfer-drive-data').checked = false;
+  document.getElementById('transfer-ownership-confirm').value = '';
+  openModal('modal-transfer-ownership');
+}
+
+async function executeTransferOwnership() {
+  if (!currentOrg) return;
+  const newOwnerEmail = document.getElementById('new-owner-sel').value;
+  const moveDriveData = document.getElementById('transfer-drive-data').checked;
+  const confirmVal = document.getElementById('transfer-ownership-confirm').value.trim();
+
+  if (!newOwnerEmail) { toast('Select a new owner', 'error'); return; }
+  if (confirmVal !== 'CONFIRM') {
+    toast('Type CONFIRM in all caps to proceed', 'error');
+    const field = document.getElementById('transfer-ownership-confirm');
+    field.style.borderColor = 'var(--danger)';
+    field.focus();
+    setTimeout(() => { field.style.borderColor = ''; }, 1500);
+    return;
+  }
+
+  toast('Transferring ownership...');
+
+  // Update roles — new owner becomes owner, current user becomes admin
+  currentOrg.members = currentOrg.members.map(m => {
+    if (m.email === newOwnerEmail) return { ...m, role: 'owner' };
+    if (m.email === currentUser.email) return { ...m, role: 'admin' };
+    return m;
+  });
+
+  if (moveDriveData) {
+    // Move org data to new owner's Drive by sharing with writer + updating metadata
+    // We share everything with the new owner at writer level (they already should have it)
+    // The org metadata file location doesn't change — Drive sharing handles access
+    // What changes is the conceptual "ownership" recorded in the metadata
+    currentOrg.ownedBy = newOwnerEmail;
+    currentOrg.transferredAt = new Date().toISOString();
+    currentOrg.transferredFrom = currentUser.email;
+
+    // Ensure new owner has writer access to all org files
+    try {
+      await driveShare(currentOrg.fileId, newOwnerEmail, 'writer');
+      if (currentOrg.projectsFolderId) {
+        await driveShare(currentOrg.projectsFolderId, newOwnerEmail, 'writer');
+        // Share all project files individually
+        const files = await driveList(
+          "'" + currentOrg.projectsFolderId + "' in parents and mimeType='application/json' and trashed=false",
+          'files(id)'
+        );
+        for (const f of files) {
+          await driveShare(f.id, newOwnerEmail, 'writer');
+        }
+      }
+    } catch(e) {
+      console.error('Share error during transfer:', e);
+    }
+
+    toast('Data access granted to new owner');
+  }
+
+  // Save updated org metadata
+  await driveWrite(currentOrg, currentOrg.fileId);
+
+  // Update local state
+  currentOrgRole = 'admin';
+  const orgIdx = orgs.findIndex(o => o.id === currentOrg.id);
+  if (orgIdx !== -1) { orgs[orgIdx] = { ...currentOrg, myRole: 'admin' }; }
+
+  closeModal('modal-transfer-ownership');
+  renderOrgView();
+  toast('Ownership transferred to ' + newOwnerEmail, 'success');
 }
 
 async function leaveOrg() {
@@ -2671,6 +2798,14 @@ function toast(msg, type='') {
   _toastTimer = setTimeout(()=>el.remove(), 3500);
 }
 
+function toggleAtmGroup(idx) {
+  atmExpanded[idx] = !atmExpanded[idx];
+  const card = document.getElementById('atm-' + idx);
+  if (card) card.outerHTML = renderAtmGroup(atmGroups[idx], idx);
+}
+
+function atmSyncBtn(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmSyncCalendar(gi,tid); }
+
 // Settings view initialization
 document.getElementById('sbi-settings')?.addEventListener('click', () => {
   loadAlertSettingsUI();
@@ -2679,5 +2814,3 @@ document.getElementById('sbi-settings')?.addEventListener('click', () => {
 </script>
 </body>
 </html>
-
-function atmSyncBtn(el) { const gi=parseInt(el.dataset.gidx); const tid=el.dataset.tid; atmSyncCalendar(gi,tid); }
