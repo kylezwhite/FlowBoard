@@ -14,6 +14,7 @@ Before creating your organization, understand the recommended setup:
 
 This is how real companies handle this. It takes 2 extra minutes and prevents problems forever.
 
+**However:** If you trust Mark, you can transfer ownership of organizations to different users.
 ---
 
 ## Step 1 — Create a Dedicated Google Account
