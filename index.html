@@ -487,14 +487,18 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
   <div class="auth-card">
     <div class="auth-logo" style="background:none;padding:0;width:64px;height:64px"><svg class="taskie-logo-svg" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="retro-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#5ec4b4"/>
-      <stop offset="45%" stop-color="#e8502a"/>
-      <stop offset="100%" stop-color="#f0a830"/>
+    <linearGradient id="retro-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#5ec4b4"/>
+      <stop offset="18%"  stop-color="#38bdf8"/>
+      <stop offset="35%"  stop-color="#a78bfa"/>
+      <stop offset="52%"  stop-color="#ec4899"/>
+      <stop offset="68%"  stop-color="#e8502a"/>
+      <stop offset="82%"  stop-color="#f0a830"/>
+      <stop offset="100%" stop-color="#fde68a"/>
     </linearGradient>
     <linearGradient id="retro-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1a2744"/>
-      <stop offset="100%" stop-color="#243968"/>
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213a"/>
     </linearGradient>
   </defs>
   <rect width="32" height="32" rx="7" fill="url(#retro-bg)"/>
@@ -539,14 +543,18 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
     <div class="sb-head">
       <div class="sb-logo" style="background:none;padding:0;width:34px;height:34px"><svg class="taskie-logo-svg" viewBox="0 0 32 32" width="34" height="34" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="retro-grad" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#5ec4b4"/>
-      <stop offset="45%" stop-color="#e8502a"/>
-      <stop offset="100%" stop-color="#f0a830"/>
+    <linearGradient id="retro-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#5ec4b4"/>
+      <stop offset="18%"  stop-color="#38bdf8"/>
+      <stop offset="35%"  stop-color="#a78bfa"/>
+      <stop offset="52%"  stop-color="#ec4899"/>
+      <stop offset="68%"  stop-color="#e8502a"/>
+      <stop offset="82%"  stop-color="#f0a830"/>
+      <stop offset="100%" stop-color="#fde68a"/>
     </linearGradient>
     <linearGradient id="retro-bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#1a2744"/>
-      <stop offset="100%" stop-color="#243968"/>
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#16213a"/>
     </linearGradient>
   </defs>
   <rect width="32" height="32" rx="7" fill="url(#retro-bg)"/>
@@ -1029,33 +1037,67 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 <div id="modal-transfer-ownership" class="modal-overlay hidden">
   <div class="modal modal-wide">
     <h3>Transfer Org Ownership</h3>
-    <div class="modal-info">
-      <strong>How this works:</strong><br><br>
-      Taskie stores org data in the Google Drive of whoever originally created the org. Transferring ownership has two parts:<br><br>
-      <strong>Step 1 — Role transfer (automatic):</strong> The new owner gets the Owner role. You become an Admin and stay in the org.<br><br>
-      <strong>Step 2 — Drive data transfer (manual, recommended):</strong><br>
-      We'll grant the new owner full access to all org files. To fully move the data to their Drive:<br>
-      1. Ask the new owner to sign into <a href="https://drive.google.com" target="_blank">Google Drive</a> and find the <strong>Taskie_Orgs</strong> folder shared with them<br>
-      2. They right-click it → <strong>Make a copy</strong> (or Add shortcut to Drive)<br>
-      3. Verify Taskie still works correctly for all members<br>
-      4. You can then remove the original folder from your Drive if desired<br><br>
-      <strong style="color:var(--warn)">⚠ Do not delete the original until the new owner confirms everything is working.</strong>
+
+    <!-- Step indicator -->
+    <div style="display:flex;gap:0;margin-bottom:18px;border-radius:var(--r-sm);overflow:hidden;border:1px solid var(--border)">
+      <div id="tstep-1" style="flex:1;padding:8px;text-align:center;font-size:12px;font-weight:600;background:var(--accent-bg);color:var(--accent)">1 · Select &amp; Grant</div>
+      <div id="tstep-2" style="flex:1;padding:8px;text-align:center;font-size:12px;color:var(--text3);border-left:1px solid var(--border)">2 · New Owner Accepts</div>
+      <div id="tstep-3" style="flex:1;padding:8px;text-align:center;font-size:12px;color:var(--text3);border-left:1px solid var(--border)">3 · Finalize</div>
     </div>
-    <div class="form-field">
-      <label>New Owner *</label>
-      <select id="new-owner-sel"></select>
+
+    <!-- Step 1 -->
+    <div id="transfer-step-1">
+      <div class="modal-info">
+        <strong>What happens:</strong> We'll grant the new owner full write access to all org files in Google Drive and update their role to Owner. Because Google requires the recipient to <em>accept</em> file ownership, you'll need to complete Step 2 after this.
+      </div>
+      <div class="form-field">
+        <label>New Owner *</label>
+        <select id="new-owner-sel"></select>
+      </div>
+      <div class="form-field" style="display:flex;align-items:flex-start;gap:8px">
+        <input type="checkbox" id="transfer-drive-data" checked style="width:15px;height:15px;accent-color:var(--accent);margin-top:2px;flex-shrink:0">
+        <label for="transfer-drive-data" style="font-size:13px;color:var(--text2);cursor:pointer;line-height:1.5">
+          Transfer ownership of all org Drive files to the new owner
+          <span style="display:block;color:var(--text3);font-size:11px;margin-top:2px">Google will send them an ownership request they must accept in Drive</span>
+        </label>
+      </div>
+      <div class="form-field">
+        <label>Type CONFIRM to proceed *</label>
+        <input type="text" id="transfer-ownership-confirm" placeholder="CONFIRM">
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('modal-transfer-ownership')">Cancel</button>
+        <button class="btn btn-primary" onclick="executeTransferOwnership()">Grant Access &amp; Continue →</button>
+      </div>
     </div>
-    <div class="form-field" style="display:flex;align-items:flex-start;gap:8px;margin-top:4px">
-      <input type="checkbox" id="transfer-drive-data" style="width:15px;height:15px;accent-color:var(--accent);margin-top:2px;flex-shrink:0">
-      <label for="transfer-drive-data" style="font-size:13px;color:var(--text2);cursor:pointer;line-height:1.5">Grant new owner full write access to all org files in Google Drive <span style="color:var(--text3)">(required for them to manage org data)</span></label>
+
+    <!-- Step 2 -->
+    <div id="transfer-step-2" class="hidden">
+      <div class="modal-info" style="border-color:var(--warn);background:var(--warn-bg)">
+        <strong>Action required by new owner:</strong><br><br>
+        Google has been sent an ownership transfer request. The new owner must now:<br><br>
+        1. Open <a href="https://drive.google.com" target="_blank">Google Drive</a><br>
+        2. Look for a notification or email titled <strong>"Someone wants to transfer file ownership to you"</strong><br>
+        3. Click <strong>Accept</strong> for each org file<br>
+        4. Once they've accepted, come back here and click <strong>Confirm Transfer Complete</strong>
+      </div>
+      <div id="transfer-progress" style="font-size:13px;color:var(--text2);margin-bottom:14px;background:var(--bg3);border-radius:var(--r-sm);padding:10px 13px;line-height:1.8"></div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" onclick="closeModal('modal-transfer-ownership')">Close for now</button>
+        <button class="btn btn-primary" onclick="finalizeTransfer()">Confirm Transfer Complete →</button>
+      </div>
     </div>
-    <div class="form-field">
-      <label>Type CONFIRM to proceed *</label>
-      <input type="text" id="transfer-ownership-confirm" placeholder="CONFIRM">
-    </div>
-    <div class="modal-actions">
-      <button class="btn btn-ghost" onclick="closeModal('modal-transfer-ownership')">Cancel</button>
-      <button class="btn btn-primary" onclick="executeTransferOwnership()">Transfer Ownership</button>
+
+    <!-- Step 3 -->
+    <div id="transfer-step-3" class="hidden">
+      <div class="modal-info" style="border-color:var(--done-c)">
+        <strong style="color:var(--done-c)">✓ Transfer complete!</strong><br><br>
+        <span id="transfer-summary"></span><br><br>
+        You remain in the org as an Admin. You can now optionally remove the original org folder from your Drive — but only after verifying Taskie works correctly for the new owner.
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="closeModal('modal-transfer-ownership');renderOrgView()">Done</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1093,12 +1135,13 @@ input,textarea,select{font-family:var(--font);outline:none;color:var(--text)}
 const HARDCODED_CLIENT_ID = '960763551446-dj82c7b7q4ac7rs9302fcda7mn11m6lh.apps.googleusercontent.com';
 const SCOPES = [
   'https://www.googleapis.com/auth/drive.file',
-  'https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/calendar',
   'https://www.googleapis.com/auth/userinfo.email',
   'https://www.googleapis.com/auth/userinfo.profile'
 ].join(' ');
-const FOLDER_NAME = 'Taskie_Data';
-const ORG_FOLDER_NAME = 'Taskie_Orgs';
+const ROOT_FOLDER_NAME = 'Taskie';
+const FOLDER_NAME = 'My Projects';
+const ORG_FOLDER_NAME = 'Organizations';
 const COLORS = ['c1','c2','c3','c4','c5','c6'];
 const COLOR_HEX = ['#38bdf8','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899'];
 
@@ -1205,6 +1248,7 @@ function finishSignIn(name, email) {
   ensurePersonalFolder();
   loadOrgs();
   addPersonToList(name, email);
+  startPolling();
 }
 
 function signIn() {
@@ -1213,6 +1257,7 @@ function signIn() {
 }
 
 function signOut() {
+  stopPolling();
   if (accessToken) google.accounts.oauth2.revoke(accessToken, ()=>{});
   accessToken = null; currentUser = null; currentOrg = null; currentPersonalProject = null;
   personalProjects = []; orgs = [];
@@ -1411,8 +1456,17 @@ async function ensureFolder(name, parentId=null) {
 // ═══════════════════════════════════════════════════
 // PERSONAL PROJECTS
 // ═══════════════════════════════════════════════════
+let rootFolderId = null;
+
+async function ensureRootFolder() {
+  if (rootFolderId) return rootFolderId;
+  rootFolderId = await ensureFolder(ROOT_FOLDER_NAME);
+  return rootFolderId;
+}
+
 async function ensurePersonalFolder() {
-  personalFolderId = await ensureFolder(FOLDER_NAME);
+  const root = await ensureRootFolder();
+  personalFolderId = await ensureFolder(FOLDER_NAME, root);
   await loadPersonalProjects();
   checkPendingInvite();
 }
@@ -1778,7 +1832,8 @@ async function createOrg() {
   const desc = document.getElementById('co-desc').value.trim();
   if (!name) { toast('Enter an org name', 'error'); return; }
   toast('Creating organization...');
-  const orgFolderId = await ensureFolder(ORG_FOLDER_NAME);
+  const root = await ensureRootFolder();
+  const orgFolderId = await ensureFolder(ORG_FOLDER_NAME, root);
   const thisFolderId = await ensureFolder('org_' + Date.now(), orgFolderId);
   const projectsFolderId = await ensureFolder('projects', thisFolderId);
   const meta = {
@@ -1857,15 +1912,31 @@ function openTransferOwnershipModal() {
   document.getElementById('new-owner-sel').innerHTML = candidates.map(m =>
     '<option value="' + esc(m.email) + '">' + esc(m.name||m.email) + ' (' + m.role + ')</option>'
   ).join('');
-  document.getElementById('transfer-drive-data').checked = false;
+  document.getElementById('transfer-drive-data').checked = true;
   document.getElementById('transfer-ownership-confirm').value = '';
+  transferContext = {};
+  goToTransferStep(1);
   openModal('modal-transfer-ownership');
+}
+
+let transferContext = {}; // stores state across the 3 steps
+
+function goToTransferStep(step) {
+  [1,2,3].forEach(s => {
+    const el = document.getElementById('transfer-step-' + s);
+    if (el) el.classList.toggle('hidden', s !== step);
+    const indicator = document.getElementById('tstep-' + s);
+    if (indicator) {
+      indicator.style.background = s === step ? 'var(--accent-bg)' : 'transparent';
+      indicator.style.color = s === step ? 'var(--accent)' : 'var(--text3)';
+    }
+  });
 }
 
 async function executeTransferOwnership() {
   if (!currentOrg) return;
   const newOwnerEmail = document.getElementById('new-owner-sel').value;
-  const moveDriveData = document.getElementById('transfer-drive-data').checked;
+  const transferDrive = document.getElementById('transfer-drive-data').checked;
   const confirmVal = document.getElementById('transfer-ownership-confirm').value.trim();
 
   if (!newOwnerEmail) { toast('Select a new owner', 'error'); return; }
@@ -1878,56 +1949,98 @@ async function executeTransferOwnership() {
     return;
   }
 
-  toast('Transferring ownership...');
+  toast('Granting access...');
+  transferContext = { newOwnerEmail, transferDrive, filesTransferred: [], errors: [] };
 
-  // Update roles — new owner becomes owner, current user becomes admin
+  // Step 1a — Update roles in org metadata
   currentOrg.members = currentOrg.members.map(m => {
     if (m.email === newOwnerEmail) return { ...m, role: 'owner' };
     if (m.email === currentUser.email) return { ...m, role: 'admin' };
     return m;
   });
-
-  if (moveDriveData) {
-    // Move org data to new owner's Drive by sharing with writer + updating metadata
-    // We share everything with the new owner at writer level (they already should have it)
-    // The org metadata file location doesn't change — Drive sharing handles access
-    // What changes is the conceptual "ownership" recorded in the metadata
-    currentOrg.ownedBy = newOwnerEmail;
-    currentOrg.transferredAt = new Date().toISOString();
-    currentOrg.transferredFrom = currentUser.email;
-
-    // Ensure new owner has writer access to all org files
-    try {
-      await driveShare(currentOrg.fileId, newOwnerEmail, 'writer');
-      if (currentOrg.projectsFolderId) {
-        await driveShare(currentOrg.projectsFolderId, newOwnerEmail, 'writer');
-        // Share all project files individually
-        const files = await driveList(
-          "'" + currentOrg.projectsFolderId + "' in parents and mimeType='application/json' and trashed=false",
-          'files(id)'
-        );
-        for (const f of files) {
-          await driveShare(f.id, newOwnerEmail, 'writer');
-        }
-      }
-    } catch(e) {
-      console.error('Share error during transfer:', e);
-    }
-
-    toast('Data access granted to new owner');
-  }
-
-  // Save updated org metadata
+  currentOrg.ownedBy = newOwnerEmail;
+  currentOrg.transferredAt = new Date().toISOString();
+  currentOrg.transferredFrom = currentUser.email;
   await driveWrite(currentOrg, currentOrg.fileId);
 
-  // Update local state
+  if (transferDrive) {
+    // Step 1b — Request ownership transfer for each file via Drive API
+    // Google requires role: 'owner' + transferOwnership: true
+    // The new owner receives an email and must accept in Google Drive
+    const filesToTransfer = [];
+
+    // Collect all org files
+    if (currentOrg.fileId) filesToTransfer.push({ id: currentOrg.fileId, name: 'Org settings file' });
+    if (currentOrg.projectsFolderId) {
+      filesToTransfer.push({ id: currentOrg.projectsFolderId, name: 'Projects folder' });
+      try {
+        const projFiles = await driveList(
+          "'" + currentOrg.projectsFolderId + "' in parents and trashed=false",
+          'files(id,name)'
+        );
+        projFiles.forEach(f => filesToTransfer.push({ id: f.id, name: f.name }));
+      } catch(e) { console.warn('Could not list project files:', e); }
+    }
+
+    const progressEl = document.getElementById('transfer-progress');
+    let progressHtml = '<strong>Sending ownership requests:</strong><br>';
+
+    for (const file of filesToTransfer) {
+      try {
+        // First ensure they have writer access
+        await driveShare(file.id, newOwnerEmail, 'writer');
+        // Then request ownership transfer
+        const res = await fetch(
+          'https://www.googleapis.com/drive/v3/files/' + file.id + '/permissions?transferOwnership=true&sendNotificationEmail=true',
+          {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ role: 'owner', type: 'user', emailAddress: newOwnerEmail })
+          }
+        );
+        if (res.ok) {
+          transferContext.filesTransferred.push(file);
+          progressHtml += '✓ ' + file.name + '<br>';
+        } else {
+          const err = await res.json();
+          // If already owner or pending, still count as success
+          if (err.error?.code === 400 || err.error?.code === 403) {
+            progressHtml += '↻ ' + file.name + ' (pending or already transferred)<br>';
+          } else {
+            transferContext.errors.push(file.name + ': ' + (err.error?.message || 'unknown error'));
+            progressHtml += '✗ ' + file.name + ' — ' + (err.error?.message || 'failed') + '<br>';
+          }
+        }
+      } catch(e) {
+        transferContext.errors.push(file.name + ': ' + e.message);
+        progressHtml += '✗ ' + file.name + ' — ' + e.message + '<br>';
+      }
+    }
+
+    if (progressEl) progressEl.innerHTML = progressHtml;
+  }
+
+  // Move to step 2
   currentOrgRole = 'admin';
   const orgIdx = orgs.findIndex(o => o.id === currentOrg.id);
-  if (orgIdx !== -1) { orgs[orgIdx] = { ...currentOrg, myRole: 'admin' }; }
+  if (orgIdx !== -1) orgs[orgIdx] = { ...currentOrg, myRole: 'admin' };
+  goToTransferStep(2);
+  toast('Access granted — waiting for new owner to accept in Drive', 'success');
+}
 
-  closeModal('modal-transfer-ownership');
+async function finalizeTransfer() {
+  const { newOwnerEmail, filesTransferred, errors } = transferContext;
+  const summaryEl = document.getElementById('transfer-summary');
+  let summary = 'Role transferred to <strong>' + esc(newOwnerEmail) + '</strong>.';
+  if (filesTransferred.length) {
+    summary += ' ' + filesTransferred.length + ' file' + (filesTransferred.length !== 1 ? 's' : '') + ' ownership requested.';
+  }
+  if (errors.length) {
+    summary += ' ' + errors.length + ' file' + (errors.length !== 1 ? 's' : '') + ' could not be transferred — you may need to manually share those in Google Drive.';
+  }
+  if (summaryEl) summaryEl.innerHTML = summary;
+  goToTransferStep(3);
   renderOrgView();
-  toast('Ownership transferred to ' + newOwnerEmail, 'success');
 }
 
 async function leaveOrg() {
@@ -2633,6 +2746,81 @@ function syncProjectToSidebar(p) {
   if (currentProjectType === 'personal') renderPersonalSidebar();
   else renderOrgSidebar();
 }
+
+// ═══════════════════════════════════════════════════
+// LIVE POLLING — detect changes made by other users
+// ═══════════════════════════════════════════════════
+let pollInterval = null;
+let lastPollTimes = {}; // fileId → last modifiedTime seen
+
+function startPolling() {
+  if (pollInterval) return;
+  pollInterval = setInterval(pollForChanges, 5000); // every 20 seconds
+}
+
+function stopPolling() {
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+}
+
+async function pollForChanges() {
+  if (!accessToken || !currentOrg) return;
+  try {
+    // Check if the current org project has been modified by someone else
+    if (currentOrgProject?.fileId) {
+      const meta = await fetch(
+        'https://www.googleapis.com/drive/v3/files/' + currentOrgProject.fileId + '?fields=modifiedTime',
+        { headers: { 'Authorization': 'Bearer ' + accessToken } }
+      );
+      if (meta.ok) {
+        const { modifiedTime } = await meta.json();
+        const key = currentOrgProject.fileId;
+        if (lastPollTimes[key] && lastPollTimes[key] !== modifiedTime) {
+          // File changed — reload it silently
+          const updated = await driveRead(currentOrgProject.fileId);
+          if (updated) {
+            updated.fileId = currentOrgProject.fileId;
+            currentOrgProject = updated;
+            // Update in org projects array
+            const idx = (currentOrg.projects||[]).findIndex(p=>p.id===updated.id);
+            if (idx !== -1) currentOrg.projects[idx] = updated;
+            renderProjectView();
+            renderOrgSidebar();
+            toast('↻ Project updated by another user', '');
+          }
+        }
+        lastPollTimes[key] = modifiedTime;
+      }
+    }
+
+    // Also check org meta (members, settings) if viewing org
+    if (currentOrg?.fileId && currentView.startsWith('org-')) {
+      const meta = await fetch(
+        'https://www.googleapis.com/drive/v3/files/' + currentOrg.fileId + '?fields=modifiedTime',
+        { headers: { 'Authorization': 'Bearer ' + accessToken } }
+      );
+      if (meta.ok) {
+        const { modifiedTime } = await meta.json();
+        const key = 'org_' + currentOrg.fileId;
+        if (lastPollTimes[key] && lastPollTimes[key] !== modifiedTime) {
+          const updated = await driveRead(currentOrg.fileId);
+          if (updated) {
+            const myRole = currentOrg.myRole;
+            currentOrg = { ...updated, fileId: currentOrg.fileId, myRole, projects: currentOrg.projects };
+            renderOrgMembers();
+            renderOrgView();
+            toast('↻ Org updated by another user', '');
+          }
+        }
+        lastPollTimes[key] = modifiedTime;
+      }
+    }
+  } catch(e) {
+    // Polling errors are silent — don't interrupt the user
+    console.warn('Poll error:', e);
+  }
+}
+
+// Start polling after sign in, stop on sign out
 
 // ═══════════════════════════════════════════════════
 // ASSIGNED TO ME
