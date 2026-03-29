@@ -1,21 +1,21 @@
 {
-  "name": "FlowBoard",
-  "short_name": "FlowBoard",
-  "description": "Free project management powered by Google Drive",
-  "start_url": "/",
+  "name": "Taskie",
+  "short_name": "Taskie",
+  "description": "Free project management powered by your Google Drive. No servers, no fees, your data stays yours.",
+  "start_url": "/Taskie/",
   "display": "standalone",
-  "background_color": "#0f172a",
-  "theme_color": "#0f172a",
+  "background_color": "#1a2744",
+  "theme_color": "#1a2744",
   "orientation": "any",
   "icons": [
     {
-      "src": "https://via.placeholder.com/192x192/0ea5e9/ffffff?text=FB",
+      "src": "https://via.placeholder.com/192x192/e8502a/f5f0e8?text=T",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "https://via.placeholder.com/512x512/0ea5e9/ffffff?text=FB",
+      "src": "https://via.placeholder.com/512x512/e8502a/f5f0e8?text=T",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
